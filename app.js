@@ -18,6 +18,10 @@ app.get('/name', (req, res) => {
     res.send({name:'Sakshi', address:'Mumbai'});dir
 });
 
+app.get('/', (req, res) => {
+    res.send('Welcome to the homepage!');
+});
+
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
 });
