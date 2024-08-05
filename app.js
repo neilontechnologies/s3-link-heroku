@@ -3,7 +3,7 @@ const cors = require('cors');
 const app = express();
 
 // Use the PORT environment variable or default to 3001
-const port = process.env.PORT || 3001;
+const port = process.env.PORT || 3000;
 
 app.use(express.urlencoded({extended:true}));
 app.use(express.json());
