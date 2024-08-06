@@ -19,8 +19,16 @@ app.get('/', (req, res) => {
     res.send('Welcome to the homepage!');
 });
 
+
 app.get('/uploadFiles', (req, res) => {
-    res.send(req)
+    try {
+        console.log('heders---'+req.headers); // Log the headers to ensure the File-ID is received
+        console.log('body'+req.body); // Log the body (if any)
+        res.send('Files upload endpoint hit'); // Send a response back to the client
+    } catch (error) {
+        console.error('Error processing request:', error);
+        res.status(500).send('Internal Server Error'); // Send a proper error response
+    }
 });
 
 const port = process.env.PORT || 3001;
