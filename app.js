@@ -19,6 +19,10 @@ app.get('/', (req, res) => {
     res.send('Welcome to the homepage!');
 });
 
+app.get('/uploadFiles', (req, res) => {
+    console.log(JSON.stringify(req));
+});
+
 const port = process.env.PORT || 3001;
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
