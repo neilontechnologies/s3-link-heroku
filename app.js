@@ -20,7 +20,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/uploadFiles', (req, res) => {
-    console.log(JSON.stringify(req));
+    console.log(JSON.stringify(req))
 });
 
 const port = process.env.PORT || 3001;
