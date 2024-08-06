@@ -2,9 +2,6 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 
-// Use the PORT environment variable or default to 3001
-const port = process.env.PORT || 3000;
-
 app.use(express.urlencoded({extended:true}));
 app.use(express.json());
 app.use(cors());
@@ -15,13 +12,14 @@ app.get('/country/:country_name', (req, res) => {
 });
 
 app.get('/name', (req, res) => {
-    res.send({name:'Sakshi', address:'Mumbai'});dir
+    res.send({name:'Sakshi', address:'Mumbai'});
 });
 
 app.get('/', (req, res) => {
     res.send('Welcome to the homepage!');
 });
 
+const port = process.env.PORT || 3001;
 app.listen(port, () => {
-    console.log(`Server is running on http://localhost:${port}`);
+  console.log(`Server is running on http://localhost:${port}`);
 });
