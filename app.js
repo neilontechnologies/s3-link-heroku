@@ -22,9 +22,10 @@ app.get('/', (req, res) => {
 
 app.get('/uploadFiles', (req, res) => {
     try {
+        const fileId = req.headers['file-id']; 
         console.log('heders---'+req.headers); // Log the headers to ensure the File-ID is received
         console.log('body'+req.body); // Log the body (if any)
-        res.send(req.headers.file-id); // Send a response back to the client
+        res.send('files--id', fileId); // Send a response back to the client
 
     } catch (error) {
         console.error('Error processing request:', error);
