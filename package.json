@@ -1,7 +1,7 @@
 {
   "name": "custom_app",
   "version": "1.0.0",
-  "main": "app.js",  
+  "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node app.js"
@@ -12,6 +12,7 @@
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.19.2",
+    "nforce": "^1.13.0",
     "save": "^2.9.0"
   }
 }
