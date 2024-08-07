@@ -35,7 +35,7 @@ app.get('/uploadFiles', (req, res) => {
         console.log('Body:', req.body); // Log the body (if any)
 
         // Sending JSON response
-        res.send(`File-ID: ${fileId}`);
+        //res.send(`File-ID: ${fileId}`);
     } catch (error) {
         console.error('Error processing request:', error);
         res.status(500).send('Internal Server Error'); // Send a proper error response
@@ -63,6 +63,7 @@ const getToken = () => {
       xhr.onreadystatechange = function () {
         if (xhr.readyState === 4) {
           if (xhr.status === 200) {
+            console.log(xhr);
             const response = JSON.parse(xhr.responseText);
             resolve(response.access_token);
           } else {
@@ -79,7 +80,7 @@ const getToken = () => {
     });
   };
 
-const port = process.env.PORT || 3002;
+const port = process.env.PORT || 3003;
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
