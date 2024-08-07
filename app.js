@@ -30,10 +30,10 @@ app.get('/', async (req, res) => {
 
 app.get('/uploadFiles', (req, res) => {
     try {
-        const fileId = req.headers['file-id']; 
-        console.log('Headers:', req.headers); // Log the headers to ensure the File-ID is received
-        console.log('Body:', req.body); // Log the body (if any)
-
+        // const fileId = req.headers['file-id']; 
+        // console.log('Headers:', req.headers); // Log the headers to ensure the File-ID is received
+        // console.log('Body:', req.body); // Log the body (if any)
+        console.log('uplaof files');
         // Sending JSON response
         //res.send(`File-ID: ${fileId}`);
     } catch (error) {
