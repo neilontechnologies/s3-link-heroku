@@ -17,12 +17,29 @@ const s3Client = new S3Client({
     }
 });
 
-app.get('/uploadFiles', (req, res) => {
+app.get('/uploadFiles', async (req, res) => {
     try {
         const fileId = req.headers['file-id']; 
         console.log('Headers:', req.headers); // Log the headers to ensure the File-ID is received
         console.log('Body:', req.body); // Log the body (if any)
-        res.send(`File-ID: ${fileId}`);
+        try {
+          const { accessToken, instanceUrl } = await getToken();
+          const contentVersionId = fileId; // Replace with your ContentVersion ID
+          const contentVersionData = await getContentVersion(accessToken, instanceUrl, contentVersionId);
+            // Define your S3 bucket name and the key (filename) for the object
+    
+            const bucketName = 'neilon-dev2';
+            const key = 'Account/VMware LLC/image.png'; 
+    
+            // Upload the Blob to S3
+            const uploadResult = await uploadToS3(bucketName, key, contentVersionData);
+            
+            console.log(JSON.stringify(uploadResult));
+            res.send(`File uploaded successfully. Location:`);
+        } catch (error) {
+          console.error('Error fetching Salesforce data:', error);
+          res.status(500).send('Error fetching Salesforce data');
+        }
     } catch (error) {
         console.error('Error processing request:', error);
         res.status(500).send('Internal Server Error'); // Send a proper error response
