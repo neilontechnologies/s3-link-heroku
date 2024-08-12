@@ -22,6 +22,7 @@ app.get('/uploadFiles', async (req, res) => {
         const fileId = req.headers['file-id']; 
         console.log('Headers:', req.headers); // Log the headers to ensure the File-ID is received
         console.log('Body:', req.body); // Log the body (if any)
+        console.log(fileId);
         try {
           const { accessToken, instanceUrl } = await getToken();
           const contentVersionId = fileId; // Replace with your ContentVersion ID
