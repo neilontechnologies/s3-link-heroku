@@ -1,4 +1,5 @@
 const express = require('express');
+const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const nforce = require('nforce');
 const cors = require('cors');
 const app = express();
@@ -7,37 +8,14 @@ app.use(express.urlencoded({extended:true}));
 app.use(express.json());
 app.use(cors());
 
-app.get('/country/:country_name', (req, res) => {
-    console.log('Route params:', req.params.country_name);
-    res.send('Country is set');
-});
-
-app.get('/name', (req, res) => {
-    res.send({name:'Sakshi', address:'Mumbai'});
-});
-
-// app.get('/', async (req, res) => {
-//     //res.send('Welcome to the homepage!');
-//     try {
-//         const accessToken = await getToken();
-//         res.send({ accessToken });
-//       } catch (error) {
-//         console.error('Error fetching Salesforce access token:', error);
-//         res.status(500).send('Error fetching Salesforce access token');
-//       }
-// });
-
-app.get('/', async (req, res) => {
-    try {
-      const { accessToken, instanceUrl } = await getToken();
-      const contentVersionId = '068J1000002Y2A8IAK'; // Replace with your ContentVersion ID
-      const contentVersionData = await getContentVersion(accessToken, instanceUrl, contentVersionId);
-      res.send(contentVersionData);
-    } catch (error) {
-      console.error('Error fetching Salesforce data:', error);
-      res.status(500).send('Error fetching Salesforce data');
+// Configure AWS SDK with your credentials and region
+const s3Client = new S3Client({
+    region: 'ap-south-1', // Region code (Mumbai)
+    credentials: {
+        accessKeyId: 'AKIA3HJD3T3REEHJPVAU',
+        secretAccessKey: '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'
     }
-  });
+});
 
 app.get('/uploadFiles', (req, res) => {
     try {
@@ -59,7 +37,7 @@ const XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
 const client_id = '3MVG9fe4g9fhX0E5LBSFIgRVGpgTpFyOVSLBuH_hpDdIQt_a3.d_KtAQV6Q1h5mTBb3DcNMzYXw==';
 const client_secret = '042C809B03668A3E01B44DCBB5E81CAA664FF6545598D27C42A30C2F0DEAF628';
 const username = 'abhishek@123457.com';
-const password = 'Abhi@123458mXV2Mw6Zu6BTUVYvVEbkEUw';
+const password = 'Abhi@12345L7QSLBs8JFFsUTgVWe9FP9gR';
 
 const getToken = () => {
     return new Promise((resolve, reject) => {
@@ -73,11 +51,10 @@ const getToken = () => {
       xhr.onreadystatechange = function () {
         if (xhr.readyState === 4) {
           if (xhr.status === 200) {
-            console.log(xhr);
-            console.log(xhr.responseText);
             debugger
             const response = JSON.parse(xhr.responseText);
             // Include instance_url in the resolved data
+            console.log('tokenn ____'+response.access_token);
             resolve({
               accessToken: response.access_token,
               instanceUrl: response.instance_url
@@ -96,66 +73,97 @@ const getToken = () => {
     });
   };
 
-// const getToken = () => {
+const getContentVersion = async (accessToken, instanceUrl, contentVersionId) => {
+  const url = `${instanceUrl}/services/data/v58.0/sobjects/ContentVersion/${contentVersionId}/VersionData`;
+
+  try {
+      const response = await fetch(url, {
+          headers: {
+              'Authorization': `Bearer ${accessToken}`
+          }
+      });
+      if (!response.ok) {
+          throw new Error(`Failed to fetch ContentVersion data: ${response.statusText}`);
+      }
+      const blob = await response.blob();
+      const arrayBuffer = await blob.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      console.log('Buffer length:', buffer.length);
+      return buffer;
+  } catch (error) {
+      console.error('Error fetching ContentVersion data:', error);
+      throw error;
+  }
+};
+
+
+function convertResponseTextToArrayBuffer(responseText) {
+    // Create a Uint8Array from the responseText
+    const bytes = new Uint8Array(responseText.length);
+    for (let i = 0; i < responseText.length; i++) {
+        bytes[i] = responseText.charCodeAt(i) & 0xFF; // Convert each character to its byte value
+    }
+
+    // Create an ArrayBuffer from the Uint8Array
+    const arrayBuffer = bytes.buffer;
+    return arrayBuffer;
+}
+
+// Function to upload Blob to S3
+// const uploadToS3 = (bucketName, key, blob) => {
+//     const params = {
+//       Bucket: bucketName,
+//       Key: key,
+//       Body: blob,
+//       ContentType: blob.type  // Set the content type if available
+//     };
+  
 //     return new Promise((resolve, reject) => {
-//       const postData = `grant_type=password&client_id=${client_id}&client_secret=${client_secret}&username=${username}&password=${password}`;
-  
-//       const xhr = new XMLHttpRequest();
-//       const url = 'https://login.salesforce.com/services/oauth2/token';
-  
-//       xhr.open('POST', url, true);
-//       xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-  
-//       xhr.onreadystatechange = function () {
-//         if (xhr.readyState === 4) {
-//           if (xhr.status === 200) {
-//             console.log(xhr);
-//             console.log(xhr.responseText);
-//             debugger
-//             const response = JSON.parse(xhr.responseText);
-//             resolve(response.access_token);
-//           } else {
-//             reject(new Error('Failed to get access token'));
-//           }
+//       S3.upload(params, (err, data) => {
+//         if (err) {
+//           reject(err);
+//         } else {
+//           resolve(data);
 //         }
-//       };
-  
-//       xhr.onerror = function (e) {
-//         reject(new Error(`Problem with request: ${e.message}`));
-//       };
-  
-//       xhr.send(postData);
+//       });
 //     });
 //   };
 
-const getContentVersion = (accessToken, instanceUrl, contentVersionId) => {
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      const url = `${instanceUrl}/services/data/v58.0/sobjects/ContentVersion/${contentVersionId}`; // Replace vXX.X with your Salesforce API version
-  
-      xhr.open('GET', url, true);
-      xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
-  
-      xhr.onreadystatechange = function () {
-        if (xhr.readyState === 4) {
-          if (xhr.status === 200) {
-            const response = JSON.parse(xhr.responseText);
-            resolve(response);
-          } else {
-            reject(new Error('Failed to fetch ContentVersion data'));
-          }
-        }
-      };
-  
-      xhr.onerror = function (e) {
-        reject(new Error(`Problem with request: ${e.message}`));
-      };
-  
-      xhr.send();
+  const uploadToS3 = (bucketName, key, buffer) => {
+    const command = new PutObjectCommand({
+        Bucket: bucketName,
+        Key: key,
+        Body: buffer,
+        //ContentType: contentType // Set the content type if available
     });
+
+    return s3Client.send(command);
 };
 
-const port = process.env.PORT || 3005;
+app.get('/', async (req, res) => {
+    try {
+      const { accessToken, instanceUrl } = await getToken();
+      const contentVersionId = '0685g00000Kyji3AAB'; // Replace with your ContentVersion ID
+      const contentVersionData = await getContentVersion(accessToken, instanceUrl, contentVersionId);
+        // Define your S3 bucket name and the key (filename) for the object
+
+        // Convert ArrayBuffer to Buffer
+        //const buffer = Buffer.from(new Uint8Array(contentVersionData));
+        const bucketName = 'neilon-dev2';
+        const key = 'Account/VMware LLC/image.png'; 
+
+        // Upload the Blob to S3
+        const uploadResult = await uploadToS3(bucketName, key, contentVersionData);
+        
+        console.log(JSON.stringify(uploadResult));
+        res.send(`File uploaded successfully. Location:`);
+    } catch (error) {
+      console.error('Error fetching Salesforce data:', error);
+      res.status(500).send('Error fetching Salesforce data');
+    }
+  });
+
+const port = process.env.PORT || 3008;
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
