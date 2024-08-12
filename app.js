@@ -22,8 +22,6 @@ app.get('/uploadFiles', (req, res) => {
         const fileId = req.headers['file-id']; 
         console.log('Headers:', req.headers); // Log the headers to ensure the File-ID is received
         console.log('Body:', req.body); // Log the body (if any)
-        //console.log('uplaof files');
-        // Sending JSON response
         res.send(`File-ID: ${fileId}`);
     } catch (error) {
         console.error('Error processing request:', error);
@@ -96,40 +94,7 @@ const getContentVersion = async (accessToken, instanceUrl, contentVersionId) => 
   }
 };
 
-
-function convertResponseTextToArrayBuffer(responseText) {
-    // Create a Uint8Array from the responseText
-    const bytes = new Uint8Array(responseText.length);
-    for (let i = 0; i < responseText.length; i++) {
-        bytes[i] = responseText.charCodeAt(i) & 0xFF; // Convert each character to its byte value
-    }
-
-    // Create an ArrayBuffer from the Uint8Array
-    const arrayBuffer = bytes.buffer;
-    return arrayBuffer;
-}
-
-// Function to upload Blob to S3
-// const uploadToS3 = (bucketName, key, blob) => {
-//     const params = {
-//       Bucket: bucketName,
-//       Key: key,
-//       Body: blob,
-//       ContentType: blob.type  // Set the content type if available
-//     };
-  
-//     return new Promise((resolve, reject) => {
-//       S3.upload(params, (err, data) => {
-//         if (err) {
-//           reject(err);
-//         } else {
-//           resolve(data);
-//         }
-//       });
-//     });
-//   };
-
-  const uploadToS3 = (bucketName, key, buffer) => {
+const uploadToS3 = (bucketName, key, buffer) => {
     const command = new PutObjectCommand({
         Bucket: bucketName,
         Key: key,
@@ -147,8 +112,6 @@ app.get('/', async (req, res) => {
       const contentVersionData = await getContentVersion(accessToken, instanceUrl, contentVersionId);
         // Define your S3 bucket name and the key (filename) for the object
 
-        // Convert ArrayBuffer to Buffer
-        //const buffer = Buffer.from(new Uint8Array(contentVersionData));
         const bucketName = 'neilon-dev2';
         const key = 'Account/VMware LLC/image.png'; 
 
@@ -161,7 +124,7 @@ app.get('/', async (req, res) => {
       console.error('Error fetching Salesforce data:', error);
       res.status(500).send('Error fetching Salesforce data');
     }
-  });
+});
 
 const port = process.env.PORT || 3008;
 app.listen(port, () => {
