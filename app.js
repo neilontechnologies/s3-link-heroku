@@ -17,6 +17,8 @@ app.get('/uploadFiles', async (req, res) => {
     const sfClientSecret = req.headers['sf-client-secret'];
     const sfUsername = req.headers['sf-username'];
     const sfPassword = req.headers['sf-password'];
+    const awsBucketName = req.headers['aws-bucket-name'];
+    const awsBucketRegion = req.headers['aws-bucket-region'];
 
     // Get access token of salesforce
     const { accessToken, instanceUrl } = await getToken(sfClientId, sfClientSecret, sfUsername, sfPassword);
@@ -29,7 +31,7 @@ app.get('/uploadFiles', async (req, res) => {
     const key = 'Account/VMware LLC/image.png'; 
 
     // Upload salesforce file into AWS S3
-    const uploadResult = await uploadToS3(bucketName, key, contentVersionData, awsAccessKey, awsSecretKey);
+    const uploadResult = await uploadToS3(awsBucketName, key, contentVersionData, awsAccessKey, awsSecretKey, awsBucketRegion);
     
     res.send(`File uploaded successfully. Location:`);
   } catch (error) {
@@ -43,9 +45,6 @@ const XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
 
 // Method to get access token of Salesforce
 const getToken = (client_id, client_secret, username, password) => {
-  console.log(client_id);
-  console.log(client_secret);
-  console.log(username)
     return new Promise((resolve, reject) => {
       const postData = `grant_type=password&client_id=${client_id}&client_secret=${client_secret}&username=${username}&password=${password}`;
       const xhr = new XMLHttpRequest();
@@ -103,17 +102,17 @@ const getContentVersion = async (accessToken, instanceUrl, contentVersionId) => 
   }
 };
 
-const uploadToS3 = async (bucketName, key, buffer, awsAccessKey, awsSecretKey) => {
+const uploadToS3 = async (awsBucketName, key, buffer, awsAccessKey, awsSecretKey, awsBucketRegion) => {
   try {
     console.log('Uploading to S3...');
     const command = new PutObjectCommand({
-        Bucket: bucketName,
+        Bucket: awsBucketName,
         Key: key,
         Body: buffer,
     });
 
     const s3Client = new S3Client({
-      region: 'ap-south-1',
+      region: awsBucketRegion,
       credentials: {
           accessKeyId: awsAccessKey,
           secretAccessKey: awsSecretKey
@@ -140,12 +139,13 @@ app.get('/', async (req, res) => {
       const contentVersionData = await getContentVersion(accessToken, instanceUrl, contentVersionId);
       const awsAccessKey = 'AKIA3HJD3T3REEHJPVAU'
       const awsSecretKey = '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'
+      const awsBucketRegion = 'ap-south-1';
 
-      const bucketName = 'neilon-dev2';
+      const awsBucketName = 'neilon-dev2';
       const key = 'Account/VMware LLC/image.png'; 
 
       // Upload the Blob to S3
-      const uploadResult = await uploadToS3(bucketName, key, contentVersionData, awsAccessKey, awsSecretKey);
+      const uploadResult = await uploadToS3(awsBucketName, key, contentVersionData, awsAccessKey, awsSecretKey, awsBucketRegion);
       
       res.send(`File uploaded successfully. Location:`);
     } catch (error) {
