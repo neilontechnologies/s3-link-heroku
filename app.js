@@ -9,14 +9,12 @@ app.use(express.json());
 app.use(cors());
 
 // Set AWS Credentails
-awsAccessKey;
-awsSecretKey;
 
 app.get('/uploadFiles', async (req, res) => {
   try {
     const fileId = req.headers['file-id']; 
-    this.awsAccessKey = req.headers['aws-access-key'];
-    this.awsSecretKey = req.headers['aws-secret-key'];
+    const awsAccessKey = req.headers['aws-access-key'];
+    const awsSecretKey = req.headers['aws-secret-key'];
     console.log('Headers:', req.headers); // Log the headers to ensure the File-ID is received
     console.log('Body:', req.body); // Log the body (if any)
     console.log(fileId);
@@ -31,7 +29,7 @@ app.get('/uploadFiles', async (req, res) => {
       const key = 'Account/VMware LLC/image.png'; 
 
       // Upload the Blob to S3
-      const uploadResult = await uploadToS3(bucketName, key, contentVersionData);
+      const uploadResult = await uploadToS3(bucketName, key, contentVersionData, awsAccessKey, awsSecretKey);
       
       console.log(JSON.stringify(uploadResult));
       res.send(`File uploaded successfully. Location:`);
@@ -101,7 +99,7 @@ const getToken = () => {
               instanceUrl: response.instance_url
             });
           } else {
-            reject(new Error('Failed to get access token 123'));
+            reject(new Error('Failed to get access token'));
           }
         }
       };
@@ -146,15 +144,15 @@ const getContentVersion = async (accessToken, instanceUrl, contentVersionId) => 
 };
 
 // Configure AWS SDK with your credentials and region
-const s3Client = new S3Client({
-  region: 'ap-south-1', // Region code (Mumbai)
-  credentials: {
-      accessKeyId: this.awsAccessKey,//
-      secretAccessKey: this.awsSecretKey
-  }
-});
+// const s3Client = new S3Client({
+//   region: 'ap-south-1', // Region code (Mumbai)
+//   credentials: {
+//       accessKeyId: this.awsAccessKey,//
+//       secretAccessKey: this.awsSecretKey
+//   }
+// });
 
-const uploadToS3 = async (bucketName, key, buffer) => {
+const uploadToS3 = async (bucketName, key, buffer, awsAccessKey, awsSecretKey) => {
   try {
     console.log('Uploading to S3...');
     const command = new PutObjectCommand({
@@ -164,13 +162,20 @@ const uploadToS3 = async (bucketName, key, buffer) => {
         // ContentType: contentType // Set the content type if available
     });
 
+    const s3Client = new S3Client({
+      region: 'ap-south-1', // Region code (Mumbai)
+      credentials: {
+          accessKeyId: awsAccessKey,
+          secretAccessKey: awsSecretKey
+      }
+    });
     const response = await s3Client.send(command);
     console.log('Upload successful:', response);
     return response;
-} catch (error) {
-    console.error('Error uploading to S3:', error.message);
-    throw error.message; // Re-throw the error if you want it to propagate
-}
+  } catch (error) {
+      console.error('Error uploading to S3:', error.message);
+      throw error.message; // Re-throw the error if you want it to propagate
+  }
 };
 
 app.get('/', async (req, res) => {
@@ -185,7 +190,7 @@ app.get('/', async (req, res) => {
         const key = 'Account/VMware LLC/image.png'; 
 
         // Upload the Blob to S3
-        const uploadResult = await uploadToS3(bucketName, key, contentVersionData);
+        const uploadResult = await uploadToS3(bucketName, key, contentVersionData, awsAccessKey, awsSecretKey);
         
         console.log(JSON.stringify(uploadResult));
         res.send(`File uploaded successfully. Location:`);
