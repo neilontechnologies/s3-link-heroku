@@ -12,7 +12,7 @@ app.use(cors());
 const s3Client = new S3Client({
     region: 'ap-south-1', // Region code (Mumbai)
     credentials: {
-        accessKeyId: 'AKIA3HJD3T3REEHJPVAU',
+        accessKeyId: 'AKIA3HJD3T3REEHJPVAU',//
         secretAccessKey: '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'
     }
 });
@@ -35,13 +35,15 @@ app.get('/uploadFiles', async (req, res) => {
             // Upload the Blob to S3
             const uploadResult = await uploadToS3(bucketName, key, contentVersionData);
             
-            console.log(JSON.stringify(uploadResult));
+            console.log('error----'+JSON.stringify(uploadResult));
             res.send(`File uploaded successfully. Location:`);
         } catch (error) {
-          console.error('Error fetching Salesforce data:', error);
-          res.status(500).send('Error fetching Salesforce data');
+          console.log('error', error);
+          //console.error('Error fetching Salesforce data:', error);
+          res.status(500).send(error);
         }
     } catch (error) {
+        console.log('error', error);
         console.error('Error processing request:', error);
         res.status(500).send('Internal Server Error'); // Send a proper error response
     }
@@ -53,7 +55,7 @@ const XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
 const client_id = '3MVG9fe4g9fhX0E5LBSFIgRVGpgTpFyOVSLBuH_hpDdIQt_a3.d_KtAQV6Q1h5mTBb3DcNMzYXw==';
 const client_secret = '042C809B03668A3E01B44DCBB5E81CAA664FF6545598D27C42A30C2F0DEAF628';
 const username = 'abhishek@123457.com';
-const password = 'Abhi@12345L7QSLBs8JFFsUTgVWe9FP9gR';
+const password = 'Abhi@12345HLTQen8eCoiN5TBV8nVOlIfnf';
 
 const getToken = () => {
     return new Promise((resolve, reject) => {
@@ -90,6 +92,7 @@ const getToken = () => {
   };
 
 const getContentVersion = async (accessToken, instanceUrl, contentVersionId) => {
+  console.log('Method Calling get content version');
   const url = `${instanceUrl}/services/data/v58.0/sobjects/ContentVersion/${contentVersionId}/VersionData`;
 
   try {
@@ -98,29 +101,41 @@ const getContentVersion = async (accessToken, instanceUrl, contentVersionId) => 
               'Authorization': `Bearer ${accessToken}`
           }
       });
+      console.log('EROR---');
       if (!response.ok) {
+          console.log('GETTING AN ERROR');
           throw new Error(`Failed to fetch ContentVersion data: ${response.statusText}`);
       }
+      console.log(JSON.stringify(response));
       const blob = await response.blob();
       const arrayBuffer = await blob.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
       console.log('Buffer length:', buffer.length);
       return buffer;
   } catch (error) {
+    console.log(error, 'GETTING');
       console.error('Error fetching ContentVersion data:', error);
       throw error;
   }
 };
 
-const uploadToS3 = (bucketName, key, buffer) => {
+const uploadToS3 = async (bucketName, key, buffer) => {
+  try {
+    console.log('Uploading to S3...');
     const command = new PutObjectCommand({
         Bucket: bucketName,
         Key: key,
         Body: buffer,
-        //ContentType: contentType // Set the content type if available
+        // ContentType: contentType // Set the content type if available
     });
 
-    return s3Client.send(command);
+    const response = await s3Client.send(command);
+    console.log('Upload successful:', response);
+    return response;
+} catch (error) {
+    console.error('Error uploading to S3:', error);
+    throw error; // Re-throw the error if you want it to propagate
+}
 };
 
 app.get('/', async (req, res) => {
@@ -128,6 +143,7 @@ app.get('/', async (req, res) => {
       const { accessToken, instanceUrl } = await getToken();
       const contentVersionId = '0685g00000Kyji3AAB'; // Replace with your ContentVersion ID
       const contentVersionData = await getContentVersion(accessToken, instanceUrl, contentVersionId);
+      console.log(contentVersionData);
         // Define your S3 bucket name and the key (filename) for the object
 
         const bucketName = 'neilon-dev2';
