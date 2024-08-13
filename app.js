@@ -12,15 +12,6 @@ app.use(cors());
 awsAccessKey;
 awsSecretKey;
 
-// Configure AWS SDK with your credentials and region
-const s3Client = new S3Client({
-    region: 'ap-south-1', // Region code (Mumbai)
-    credentials: {
-        accessKeyId: this.awsAccessKey,//
-        secretAccessKey: this.awsSecretKey
-    }
-});
-
 app.get('/uploadFiles', async (req, res) => {
   try {
     const fileId = req.headers['file-id']; 
@@ -153,6 +144,15 @@ const getContentVersion = async (accessToken, instanceUrl, contentVersionId) => 
       throw error;
   }
 };
+
+// Configure AWS SDK with your credentials and region
+const s3Client = new S3Client({
+  region: 'ap-south-1', // Region code (Mumbai)
+  credentials: {
+      accessKeyId: this.awsAccessKey,//
+      secretAccessKey: this.awsSecretKey
+  }
+});
 
 const uploadToS3 = async (bucketName, key, buffer) => {
   try {
