@@ -12,13 +12,39 @@ app.use(cors());
 const s3Client = new S3Client({
     region: 'ap-south-1', // Region code (Mumbai)
     credentials: {
-        accessKeyId: 'abc',//AKIA3HJD3T3REEHJPVAU
+        accessKeyId: '123',//AKIA3HJD3T3REEHJPVAU
         secretAccessKey: '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'
     }
 });
 
 app.get('/uploadFiles', async (req, res) => {
-    try {
+  try {
+    const fileId = req.headers['file-id']; 
+    console.log('Headers:', req.headers); // Log the headers to ensure the File-ID is received
+    console.log('Body:', req.body); // Log the body (if any)
+    console.log(fileId);
+
+    const { accessToken, instanceUrl } = await getToken();
+    const contentVersionId = fileId // Replace with your ContentVersion ID//0685g00000Kyji3AAB
+    const contentVersionData = await getContentVersion(accessToken, instanceUrl, contentVersionId);
+    //console.log(contentVersionData);
+      // Define your S3 bucket name and the key (filename) for the object
+
+      const bucketName = 'neilon-dev2';
+      const key = 'Account/VMware LLC/image.png'; 
+
+      // Upload the Blob to S3
+      const uploadResult = await uploadToS3(bucketName, key, contentVersionData);
+      
+      console.log(JSON.stringify(uploadResult));
+      res.send(`File uploaded successfully. Location:`);
+  } catch (error) {
+    console.error('Error fetching Salesforce 124 data:', error);
+    console.log(JSON.stringify(error));
+    res.status(500).send(`Error: ${error || 'An unexpected error occurred.'}`);
+  }
+
+  /*try {
         const fileId = req.headers['file-id']; 
         console.log('Headers:', req.headers); // Log the headers to ensure the File-ID is received
         console.log('Body:', req.body); // Log the body (if any)
@@ -39,14 +65,14 @@ app.get('/uploadFiles', async (req, res) => {
             res.send(`File uploaded successfully. Location:`);
         } catch (error) {
           console.log('error', error);
-          //console.error('Error fetching Salesforce data:', error);
-          res.status(500).send(error);
+          console.error('Error fetching Salesforce data:', error);
+          res.status(500).send('Error fetching Salesforce data');
         }
     } catch (error) {
         console.log('error', error);
         console.error('Error processing request:', error);
         res.status(500).send('Internal Server Error'); // Send a proper error response
-    }
+    }*/
 });
 
 const XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
@@ -78,7 +104,7 @@ const getToken = () => {
               instanceUrl: response.instance_url
             });
           } else {
-            reject(new Error('Failed to get access token'));
+            reject(new Error('Failed to get access token 123'));
           }
         }
       };
@@ -101,12 +127,15 @@ const getContentVersion = async (accessToken, instanceUrl, contentVersionId) => 
               'Authorization': `Bearer ${accessToken}`
           }
       });
+      //Returns the response status code
+      console.log(response.status);
       console.log('EROR---');
       if (!response.ok) {
           console.log('GETTING AN ERROR');
+          console.log(JSON.stringify(response));
           throw new Error(`Failed to fetch ContentVersion data: ${response.statusText}`);
       }
-      console.log(JSON.stringify(response));
+      //console.log(JSON.stringify(response));
       const blob = await response.blob();
       const arrayBuffer = await blob.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
@@ -133,17 +162,17 @@ const uploadToS3 = async (bucketName, key, buffer) => {
     console.log('Upload successful:', response);
     return response;
 } catch (error) {
-    console.error('Error uploading to S3:', error);
-    throw error; // Re-throw the error if you want it to propagate
+    console.error('Error uploading to S3:', error.message);
+    throw error.message; // Re-throw the error if you want it to propagate
 }
 };
 
 app.get('/', async (req, res) => {
     try {
       const { accessToken, instanceUrl } = await getToken();
-      const contentVersionId = '0685g00000Kyji3AAB'; // Replace with your ContentVersion ID
+      const contentVersionId = 'abc'; // Replace with your ContentVersion ID//0685g00000Kyji3AAB
       const contentVersionData = await getContentVersion(accessToken, instanceUrl, contentVersionId);
-      console.log(contentVersionData);
+      //console.log(contentVersionData);
         // Define your S3 bucket name and the key (filename) for the object
 
         const bucketName = 'neilon-dev2';
@@ -155,8 +184,9 @@ app.get('/', async (req, res) => {
         console.log(JSON.stringify(uploadResult));
         res.send(`File uploaded successfully. Location:`);
     } catch (error) {
-      console.error('Error fetching Salesforce data:', error);
-      res.status(500).send('Error fetching Salesforce data');
+      console.error('Error fetching Salesforce 124 data:', error);
+      console.log(JSON.stringify(error));
+      res.status(500).send(`Error: ${error || 'An unexpected error occurred.'}`);
     }
 });
 
