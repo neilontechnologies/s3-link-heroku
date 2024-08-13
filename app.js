@@ -43,6 +43,9 @@ const XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
 
 // Method to get access token of Salesforce
 const getToken = (client_id, client_secret, username, password) => {
+  console.log(client_id);
+  console.log(client_secret);
+  console.log(username)
     return new Promise((resolve, reject) => {
       const postData = `grant_type=password&client_id=${client_id}&client_secret=${client_secret}&username=${username}&password=${password}`;
       const xhr = new XMLHttpRequest();
@@ -55,7 +58,6 @@ const getToken = (client_id, client_secret, username, password) => {
         if (xhr.readyState === 4) {
           if (xhr.status === 200) {
             debugger
-            console.log('tokenn ____'+response.access_token);
             resolve({
               accessToken: response.access_token,
               instanceUrl: response.instance_url
