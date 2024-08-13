@@ -7,22 +7,28 @@ app.use(express.urlencoded({extended:true}));
 app.use(express.json());
 app.use(cors());
 
-// Method to upload salesforce files into AWS dynamatically from salesforce method
+// Method to upload salesforce files into AWS S3 dynamatically from salesforce method
 app.get('/uploadFiles', async (req, res) => {
   try {
     const sfContentVersionId = req.headers['sf-content-version-id']; 
     const awsAccessKey = req.headers['aws-access-key'];
     const awsSecretKey = req.headers['aws-secret-key'];
+    const sfClientId = req.headers['sf-client-id'];
+    const sfClientSecret = req.headers['sf-client-secret'];
+    const sfUsername = req.headers['sf-username'];
+    const sfPassword = req.headers['sf-password'];
 
     // Get access token of salesforce
-    const { accessToken, instanceUrl } = await getToken();
+    const { accessToken, instanceUrl } = await getToken(sfClientId, sfClientSecret, sfUsername, sfPassword);
     const contentVersionId = sfContentVersionId; 
+
+    // Get salesforce file information 
     const contentVersionData = await getContentVersion(accessToken, instanceUrl, contentVersionId);
 
     const bucketName = 'neilon-dev2';
     const key = 'Account/VMware LLC/image.png'; 
 
-    // Upload the Blob to S3
+    // Upload salesforce file into AWS S3
     const uploadResult = await uploadToS3(bucketName, key, contentVersionData, awsAccessKey, awsSecretKey);
     
     res.send(`File uploaded successfully. Location:`);
@@ -35,13 +41,8 @@ app.get('/uploadFiles', async (req, res) => {
 
 const XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
 
-// Replace these values with your own Salesforce Connected App credentials
-const client_id = '3MVG9fe4g9fhX0E5LBSFIgRVGpgTpFyOVSLBuH_hpDdIQt_a3.d_KtAQV6Q1h5mTBb3DcNMzYXw==';
-const client_secret = '042C809B03668A3E01B44DCBB5E81CAA664FF6545598D27C42A30C2F0DEAF628';
-const username = 'abhishek@123457.com';
-const password = 'Abhi@12345HLTQen8eCoiN5TBV8nVOlIfnf';
-
-const getToken = () => {
+// Method to get access token of Salesforce
+const getToken = (client_id, client_secret, username, password) => {
     return new Promise((resolve, reject) => {
       const postData = `grant_type=password&client_id=${client_id}&client_secret=${client_secret}&username=${username}&password=${password}`;
       const xhr = new XMLHttpRequest();
@@ -125,7 +126,13 @@ const uploadToS3 = async (bucketName, key, buffer, awsAccessKey, awsSecretKey) =
 
 app.get('/', async (req, res) => {
     try {
-      const { accessToken, instanceUrl } = await getToken();
+      // Replace these values with your own Salesforce Connected App credentials
+      const client_id = '3MVG9fe4g9fhX0E5LBSFIgRVGpgTpFyOVSLBuH_hpDdIQt_a3.d_KtAQV6Q1h5mTBb3DcNMzYXw==';
+      const client_secret = '042C809B03668A3E01B44DCBB5E81CAA664FF6545598D27C42A30C2F0DEAF628';
+      const username = 'abhishek@123457.com';
+      const password = 'Abhi@12345HLTQen8eCoiN5TBV8nVOlIfnf';
+
+      const { accessToken, instanceUrl } = await getToken(client_id, client_secret, username, password);
       const contentVersionId = '0685g00000Kyji3AAB'; // Replace with your ContentVersion ID//
       const contentVersionData = await getContentVersion(accessToken, instanceUrl, contentVersionId);
       const awsAccessKey = 'AKIA3HJD3T3REEHJPVAU'
