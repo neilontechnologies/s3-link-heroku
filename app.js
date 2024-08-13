@@ -58,6 +58,7 @@ const getToken = (client_id, client_secret, username, password) => {
         if (xhr.readyState === 4) {
           if (xhr.status === 200) {
             debugger
+            const response = JSON.parse(xhr.responseText);
             resolve({
               accessToken: response.access_token,
               instanceUrl: response.instance_url
