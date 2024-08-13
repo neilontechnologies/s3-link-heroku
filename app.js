@@ -12,7 +12,7 @@ app.use(cors());
 const s3Client = new S3Client({
     region: 'ap-south-1', // Region code (Mumbai)
     credentials: {
-        accessKeyId: 'AKIA3HJD3T3REEHJPVAU',//
+        accessKeyId: 'abc',//AKIA3HJD3T3REEHJPVAU
         secretAccessKey: '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'
     }
 });
