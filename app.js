@@ -12,15 +12,15 @@ app.use(cors());
 
 app.get('/uploadFiles', async (req, res) => {
   try {
-    const fileId = req.headers['file-id']; 
+    const sfContentVersionId = req.headers['sf-content-version-id']; 
     const awsAccessKey = req.headers['aws-access-key'];
     const awsSecretKey = req.headers['aws-secret-key'];
     console.log('Headers:', req.headers); // Log the headers to ensure the File-ID is received
     console.log('Body:', req.body); // Log the body (if any)
-    console.log(fileId);
+    console.log(sfContentVersionId);
 
     const { accessToken, instanceUrl } = await getToken();
-    const contentVersionId = fileId // Replace with your ContentVersion ID//0685g00000Kyji3AAB
+    const contentVersionId = sfContentVersionId 
     const contentVersionData = await getContentVersion(accessToken, instanceUrl, contentVersionId);
     //console.log(contentVersionData);
       // Define your S3 bucket name and the key (filename) for the object
@@ -38,36 +38,6 @@ app.get('/uploadFiles', async (req, res) => {
     console.log(JSON.stringify(error));
     res.status(500).send(`Error: ${error || 'An unexpected error occurred.'}`);
   }
-
-  /*try {
-        const fileId = req.headers['file-id']; 
-        console.log('Headers:', req.headers); // Log the headers to ensure the File-ID is received
-        console.log('Body:', req.body); // Log the body (if any)
-        console.log(fileId);
-        try {
-          const { accessToken, instanceUrl } = await getToken();
-          const contentVersionId = fileId; // Replace with your ContentVersion ID
-          const contentVersionData = await getContentVersion(accessToken, instanceUrl, contentVersionId);
-            // Define your S3 bucket name and the key (filename) for the object
-    
-            const bucketName = 'neilon-dev2';
-            const key = 'Account/VMware LLC/image.png'; 
-    
-            // Upload the Blob to S3
-            const uploadResult = await uploadToS3(bucketName, key, contentVersionData);
-            
-            console.log('error----'+JSON.stringify(uploadResult));
-            res.send(`File uploaded successfully. Location:`);
-        } catch (error) {
-          console.log('error', error);
-          console.error('Error fetching Salesforce data:', error);
-          res.status(500).send('Error fetching Salesforce data');
-        }
-    } catch (error) {
-        console.log('error', error);
-        console.error('Error processing request:', error);
-        res.status(500).send('Internal Server Error'); // Send a proper error response
-    }*/
 });
 
 const XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
@@ -143,15 +113,6 @@ const getContentVersion = async (accessToken, instanceUrl, contentVersionId) => 
   }
 };
 
-// Configure AWS SDK with your credentials and region
-// const s3Client = new S3Client({
-//   region: 'ap-south-1', // Region code (Mumbai)
-//   credentials: {
-//       accessKeyId: this.awsAccessKey,//
-//       secretAccessKey: this.awsSecretKey
-//   }
-// });
-
 const uploadToS3 = async (bucketName, key, buffer, awsAccessKey, awsSecretKey) => {
   try {
     console.log('Uploading to S3...');
@@ -159,11 +120,10 @@ const uploadToS3 = async (bucketName, key, buffer, awsAccessKey, awsSecretKey) =
         Bucket: bucketName,
         Key: key,
         Body: buffer,
-        // ContentType: contentType // Set the content type if available
     });
 
     const s3Client = new S3Client({
-      region: 'ap-south-1', // Region code (Mumbai)
+      region: 'ap-south-1',
       credentials: {
           accessKeyId: awsAccessKey,
           secretAccessKey: awsSecretKey
@@ -174,26 +134,26 @@ const uploadToS3 = async (bucketName, key, buffer, awsAccessKey, awsSecretKey) =
     return response;
   } catch (error) {
       console.error('Error uploading to S3:', error.message);
-      throw error.message; // Re-throw the error if you want it to propagate
+      throw error.message; 
   }
 };
 
 app.get('/', async (req, res) => {
     try {
       const { accessToken, instanceUrl } = await getToken();
-      const contentVersionId = 'abc'; // Replace with your ContentVersion ID//0685g00000Kyji3AAB
+      const contentVersionId = '0685g00000Kyji3AAB'; // Replace with your ContentVersion ID//
       const contentVersionData = await getContentVersion(accessToken, instanceUrl, contentVersionId);
-      //console.log(contentVersionData);
-        // Define your S3 bucket name and the key (filename) for the object
+      const awsAccessKey = 'AKIA3HJD3T3REEHJPVAU'
+      const awsSecretKey = 'zjUBWEmN49TGhVempmKq0ksK9JhkC08/Gipw+0gt'
 
-        const bucketName = 'neilon-dev2';
-        const key = 'Account/VMware LLC/image.png'; 
+      const bucketName = 'neilon-dev2';
+      const key = 'Account/VMware LLC/image.png'; 
 
-        // Upload the Blob to S3
-        const uploadResult = await uploadToS3(bucketName, key, contentVersionData, awsAccessKey, awsSecretKey);
-        
-        console.log(JSON.stringify(uploadResult));
-        res.send(`File uploaded successfully. Location:`);
+      // Upload the Blob to S3
+      const uploadResult = await uploadToS3(bucketName, key, contentVersionData, awsAccessKey, awsSecretKey);
+      
+      console.log(JSON.stringify(uploadResult));
+      res.send(`File uploaded successfully. Location:`);
     } catch (error) {
       console.error('Error fetching Salesforce 124 data:', error);
       console.log(JSON.stringify(error));
