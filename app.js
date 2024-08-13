@@ -1,6 +1,5 @@
 const express = require('express');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
-const nforce = require('nforce');
 const cors = require('cors');
 const app = express();
 
@@ -8,31 +7,25 @@ app.use(express.urlencoded({extended:true}));
 app.use(express.json());
 app.use(cors());
 
-// Set AWS Credentails
-
+// Method to upload salesforce files into AWS dynamatically from salesforce method
 app.get('/uploadFiles', async (req, res) => {
   try {
     const sfContentVersionId = req.headers['sf-content-version-id']; 
     const awsAccessKey = req.headers['aws-access-key'];
     const awsSecretKey = req.headers['aws-secret-key'];
-    console.log('Headers:', req.headers); // Log the headers to ensure the File-ID is received
-    console.log('Body:', req.body); // Log the body (if any)
-    console.log(sfContentVersionId);
 
+    // Get access token of salesforce
     const { accessToken, instanceUrl } = await getToken();
-    const contentVersionId = sfContentVersionId 
+    const contentVersionId = sfContentVersionId; 
     const contentVersionData = await getContentVersion(accessToken, instanceUrl, contentVersionId);
-    //console.log(contentVersionData);
-      // Define your S3 bucket name and the key (filename) for the object
 
-      const bucketName = 'neilon-dev2';
-      const key = 'Account/VMware LLC/image.png'; 
+    const bucketName = 'neilon-dev2';
+    const key = 'Account/VMware LLC/image.png'; 
 
-      // Upload the Blob to S3
-      const uploadResult = await uploadToS3(bucketName, key, contentVersionData, awsAccessKey, awsSecretKey);
-      
-      console.log(JSON.stringify(uploadResult));
-      res.send(`File uploaded successfully. Location:`);
+    // Upload the Blob to S3
+    const uploadResult = await uploadToS3(bucketName, key, contentVersionData, awsAccessKey, awsSecretKey);
+    
+    res.send(`File uploaded successfully. Location:`);
   } catch (error) {
     console.error('Error fetching Salesforce 124 data:', error);
     console.log(JSON.stringify(error));
@@ -61,8 +54,6 @@ const getToken = () => {
         if (xhr.readyState === 4) {
           if (xhr.status === 200) {
             debugger
-            const response = JSON.parse(xhr.responseText);
-            // Include instance_url in the resolved data
             console.log('tokenn ____'+response.access_token);
             resolve({
               accessToken: response.access_token,
@@ -93,23 +84,18 @@ const getContentVersion = async (accessToken, instanceUrl, contentVersionId) => 
           }
       });
       //Returns the response status code
-      console.log(response.status);
-      console.log('EROR---');
       if (!response.ok) {
           console.log('GETTING AN ERROR');
-          console.log(JSON.stringify(response));
           throw new Error(`Failed to fetch ContentVersion data: ${response.statusText}`);
       }
-      //console.log(JSON.stringify(response));
       const blob = await response.blob();
       const arrayBuffer = await blob.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
-      console.log('Buffer length:', buffer.length);
       return buffer;
   } catch (error) {
     console.log(error, 'GETTING');
-      console.error('Error fetching ContentVersion data:', error);
-      throw error;
+    console.error('Error fetching ContentVersion data:', error);
+    throw error;
   }
 };
 
@@ -130,11 +116,10 @@ const uploadToS3 = async (bucketName, key, buffer, awsAccessKey, awsSecretKey) =
       }
     });
     const response = await s3Client.send(command);
-    console.log('Upload successful:', response);
     return response;
   } catch (error) {
-      console.error('Error uploading to S3:', error.message);
-      throw error.message; 
+    console.error('Error uploading to S3:', error.message);
+    throw error.message; 
   }
 };
 
@@ -152,11 +137,9 @@ app.get('/', async (req, res) => {
       // Upload the Blob to S3
       const uploadResult = await uploadToS3(bucketName, key, contentVersionData, awsAccessKey, awsSecretKey);
       
-      console.log(JSON.stringify(uploadResult));
       res.send(`File uploaded successfully. Location:`);
     } catch (error) {
       console.error('Error fetching Salesforce 124 data:', error);
-      console.log(JSON.stringify(error));
       res.status(500).send(`Error: ${error || 'An unexpected error occurred.'}`);
     }
 });
