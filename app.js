@@ -8,18 +8,24 @@ app.use(express.urlencoded({extended:true}));
 app.use(express.json());
 app.use(cors());
 
+// Set AWS Credentails
+awsAccessKey;
+awsSecretKey;
+
 // Configure AWS SDK with your credentials and region
 const s3Client = new S3Client({
     region: 'ap-south-1', // Region code (Mumbai)
     credentials: {
-        accessKeyId: 'AKIA3HJD3T3REEHJPVAU',//
-        secretAccessKey: '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'
+        accessKeyId: this.awsAccessKey,//
+        secretAccessKey: this.awsSecretKey
     }
 });
 
 app.get('/uploadFiles', async (req, res) => {
   try {
     const fileId = req.headers['file-id']; 
+    this.awsAccessKey = req.headers['aws-access-key'];
+    this.awsSecretKey = req.headers['aws-secret-key'];
     console.log('Headers:', req.headers); // Log the headers to ensure the File-ID is received
     console.log('Body:', req.body); // Log the body (if any)
     console.log(fileId);
