@@ -21,6 +21,7 @@ app.get('/uploadFiles', async (req, res) => {
     const sfPassword = req.headers['sf-password'];
     const awsBucketName = req.headers['aws-bucket-name'];
     const awsBucketRegion = req.headers['aws-bucket-region'];
+    const awsFileKey = req.headers['aws-file-key']
 
     // Get access token of salesforce
     const { accessToken, instanceUrl } = await getToken(sfClientId, sfClientSecret, sfUsername, sfPassword);
@@ -29,10 +30,10 @@ app.get('/uploadFiles', async (req, res) => {
     const contentVersionData = await getContentVersion(accessToken, instanceUrl, sfContentVersionId);
 
     const bucketName = 'neilon-dev2';
-    const key = 'Account/VMware LLC/image.png'; 
+    //const key = 'Account/VMware LLC/image.png'; 
 
     // Upload salesforce file into AWS S3
-    const uploadResult = await uploadToS3(contentVersionData, key, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);// 3,2.1.5
+    const uploadResult = await uploadToS3(contentVersionData, awsFileKey, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);// 3,2.1.5
     
     res.send(`File uploaded successfully. Location:`);
   } catch (error) {
