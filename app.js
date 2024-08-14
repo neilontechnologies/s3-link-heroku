@@ -7,7 +7,9 @@ app.use(express.urlencoded({extended:true}));
 app.use(express.json());
 app.use(cors());
 
-// Method to upload salesforce files into AWS S3 dynamatically from salesforce method
+const XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
+
+// This method to upload salesforce files into AWS S3 dynamatically from salesforce method
 app.get('/uploadFiles', async (req, res) => {
   try {
     const sfContentVersionId = req.headers['sf-content-version-id']; 
@@ -22,16 +24,15 @@ app.get('/uploadFiles', async (req, res) => {
 
     // Get access token of salesforce
     const { accessToken, instanceUrl } = await getToken(sfClientId, sfClientSecret, sfUsername, sfPassword);
-    const contentVersionId = sfContentVersionId; 
 
     // Get salesforce file information 
-    const contentVersionData = await getContentVersion(accessToken, instanceUrl, contentVersionId);
+    const contentVersionData = await getContentVersion(accessToken, instanceUrl, sfContentVersionId);
 
     const bucketName = 'neilon-dev2';
     const key = 'Account/VMware LLC/image.png'; 
 
     // Upload salesforce file into AWS S3
-    const uploadResult = await uploadToS3(awsBucketName, key, contentVersionData, awsAccessKey, awsSecretKey, awsBucketRegion);
+    const uploadResult = await uploadToS3(contentVersionData, key, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);// 3,2.1.5
     
     res.send(`File uploaded successfully. Location:`);
   } catch (error) {
@@ -41,12 +42,11 @@ app.get('/uploadFiles', async (req, res) => {
   }
 });
 
-const XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
 
-// Method to get access token of Salesforce
-const getToken = (client_id, client_secret, username, password) => {
+// This method to get access token of Salesforce org
+const getToken = (sfClientId, sfClientSecret, sfUsername, sfPassword) => {
     return new Promise((resolve, reject) => {
-      const postData = `grant_type=password&client_id=${client_id}&client_secret=${client_secret}&username=${username}&password=${password}`;
+      const postData = `grant_type=password&client_id=${sfClientId}&client_secret=${sfClientSecret}&username=${sfUsername}&password=${sfPassword}`;
       const xhr = new XMLHttpRequest();
       const url = 'https://login.salesforce.com/services/oauth2/token';
   
@@ -74,27 +74,29 @@ const getToken = (client_id, client_secret, username, password) => {
   
       xhr.send(postData);
     });
-  };
+};
 
-const getContentVersion = async (accessToken, instanceUrl, contentVersionId) => {
+
+// This method is used to get salesforce file information with the help of access token of that org, URL, salesforce fild id  
+const getContentVersion = async (accessToken, instanceUrl, sfContentVersionId) => {
   console.log('Method Calling get content version');
-  const url = `${instanceUrl}/services/data/v58.0/sobjects/ContentVersion/${contentVersionId}/VersionData`;
+  const url = `${instanceUrl}/services/data/v58.0/sobjects/ContentVersion/${sfContentVersionId}/VersionData`;
 
   try {
-      const response = await fetch(url, {
-          headers: {
-              'Authorization': `Bearer ${accessToken}`
-          }
-      });
-      //Returns the response status code
-      if (!response.ok) {
-          console.log('GETTING AN ERROR');
-          throw new Error(`Failed to fetch ContentVersion data: ${response.statusText}`);
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
       }
-      const blob = await response.blob();
-      const arrayBuffer = await blob.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      return buffer;
+    });
+    //Returns the response status code
+    if (!response.ok) {
+      console.log('GETTING AN ERROR');
+      throw new Error(`Failed to fetch ContentVersion data: ${response.statusText}`);
+    }
+    const blob = await response.blob();
+    const arrayBuffer = await blob.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    return buffer;
   } catch (error) {
     console.log(error, 'GETTING');
     console.error('Error fetching ContentVersion data:', error);
@@ -102,7 +104,8 @@ const getContentVersion = async (accessToken, instanceUrl, contentVersionId) => 
   }
 };
 
-const uploadToS3 = async (awsBucketName, key, buffer, awsAccessKey, awsSecretKey, awsBucketRegion) => {
+// This method is used to upload salesforce file into AWS S3 with the help of provided AWS data
+const uploadToS3 = async (buffer, key, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey) => {
   try {
     console.log('Uploading to S3...');
     const command = new PutObjectCommand({
@@ -145,7 +148,7 @@ app.get('/', async (req, res) => {
       const key = 'Account/VMware LLC/image.png'; 
 
       // Upload the Blob to S3
-      const uploadResult = await uploadToS3(awsBucketName, key, contentVersionData, awsAccessKey, awsSecretKey, awsBucketRegion);
+      const uploadResult = await uploadToS3(contentVersionData, key, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);
       
       res.send(`File uploaded successfully. Location:`);
     } catch (error) {
