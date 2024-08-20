@@ -34,8 +34,10 @@ app.get('/uploadFiles', async (req, res) => {
     // Upload salesforce file into AWS S3
     const uploadResult = await uploadToS3(contentVersionData, awsFileKey, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);// 3,2.1.5
     console.log(JSON.stringify(uploadResult));
-    
-    res.send(`File uploaded successfully. Location:`);
+    if(uploadResult.$metadata.httpStatusCode == '200'){
+      console.log('yess');
+      res.send(`File uploaded successfully. Location:`);
+    }
   } catch (error) {
     console.error('Error fetching Salesforce 124 data:', error);
     console.log(JSON.stringify(error));
@@ -150,7 +152,8 @@ app.get('/', async (req, res) => {
 
       // Upload the Blob to S3
       const uploadResult = await uploadToS3(contentVersionData, key, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);
-      
+      console.log(JSON.stringify(uploadResult.$metadata));
+      console.log(JSON.stringify(uploadResult.$metadata.httpStatusCode))
       res.send(`File uploaded successfully. Location:`);
     } catch (error) {
       console.error('Error fetching Salesforce 124 data:', error);
