@@ -43,7 +43,7 @@ app.get('/uploadFiles', async (req, res) => {
     const url = 'https://dev2-neilon-dev-ed.develop.my.salesforce.com/services/apexrest/NEILON/S3Link/v1/creates3files/';
 
     xhr.open('POST', url, true);
-    xhr.setRequestHeader('Authorization', 'Bearer ' + awsAccessKey);
+      xhr.setRequestHeader('Authorization', 'Bearer 00DGB000002FWLe!ARcAQJCmTnHimT26iLsjf7nyWISRvsVkg1ZuRFVq8SwIwsu3kKeqqcMT3D09jnQh_wGC_bS0FPRcScNV5FYSjULmZe1pPn2A');
     xhr.setRequestHeader('Content-Type', 'application/json');
 
     const body = [
