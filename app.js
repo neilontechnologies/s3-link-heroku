@@ -40,14 +40,14 @@ app.get('/uploadFiles', async (req, res) => {
     const url = 'https://dev2-neilon-dev-ed.develop.my.salesforce.com/services/apexrest/NEILON/S3Link/v1/creates3files/';
 
     xhr.open('POST', url, true);
-    xhr.setRequestHeader('Authorization', 'Bearer 00DGB000002FWLe!ARcAQJCmTnHimT26iLsjf7nyWISRvsVkg1ZuRFVq8SwIwsu3kKeqqcMT3D09jnQh_wGC_bS0FPRcScNV5FYSjULmZe1pPn2A');
+    xhr.setRequestHeader('Authorization', 'Bearer ' + awsAccessKey);
     xhr.setRequestHeader('Content-Type', 'application/json');
 
     const body = [
       {
         "Name": "Screenshot? (1)",
-        "NEILON__Bucket_Name__c": "neilon-dev2",
-        "NEILON__Amazon_File_Key__c": "Accounts/Burlington Textiles Corp of America/Screenshot- (2).png",
+        "NEILON__Bucket_Name__c": awsBucketName,
+        "NEILON__Amazon_File_Key__c": awsFileKey,
         "NEILON__Size__c": 178893,
         "NEILON__Account__c": "001GB00003B1jEgYAJ"
       }
