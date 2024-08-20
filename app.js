@@ -34,10 +34,40 @@ app.get('/uploadFiles', async (req, res) => {
     // Upload salesforce file into AWS S3
     const uploadResult = await uploadToS3(contentVersionData, awsFileKey, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);// 3,2.1.5
     console.log(JSON.stringify(uploadResult));
-    if(uploadResult.$metadata.httpStatusCode == '200'){
-      console.log('yess');
-      res.send(`File uploaded successfully. Location:`);
-    }
+    
+    res.send(`File uploaded successfully. Location:`);
+    const xhr = new XMLHttpRequest();
+    const url = 'https://dev2-neilon-dev-ed.develop.my.salesforce.com/services/apexrest/NEILON/S3Link/v1/creates3files/';
+
+    xhr.open('POST', url, true);
+    xhr.setRequestHeader('Authorization', 'Bearer 00DGB000002FWLe!ARcAQJCmTnHimT26iLsjf7nyWISRvsVkg1ZuRFVq8SwIwsu3kKeqqcMT3D09jnQh_wGC_bS0FPRcScNV5FYSjULmZe1pPn2A');
+    xhr.setRequestHeader('Content-Type', 'application/json');
+
+    const body = [
+      {
+        "Name": "Screenshot? (1)",
+        "NEILON__Bucket_Name__c": "neilon-dev2",
+        "NEILON__Amazon_File_Key__c": "Accounts/Burlington Textiles Corp of America/Screenshot- (1).png",
+        "NEILON__Size__c": 178893,
+        "NEILON__Account__c": "001GB00003B1jEgYAJ"
+      }
+    ];
+
+    xhr.onload = function () {
+      if (xhr.readyState === 4 && xhr.status === 200) {
+        debugger;
+        const response = JSON.parse(xhr.responseText);
+        console.log('Method Success', response);
+      } else {
+        console.log('ERROR:', xhr.status, xhr.statusText);
+      }
+    };
+
+    xhr.onerror = function (e) {
+      console.error('Request failed:', e);
+    };
+
+    xhr.send(JSON.stringify(body));
   } catch (error) {
     console.error('Error fetching Salesforce 124 data:', error);
     console.log(JSON.stringify(error));
@@ -152,9 +182,41 @@ app.get('/', async (req, res) => {
 
       // Upload the Blob to S3
       const uploadResult = await uploadToS3(contentVersionData, key, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);
-      console.log(JSON.stringify(uploadResult.$metadata));
-      console.log(JSON.stringify(uploadResult.$metadata.httpStatusCode))
+      console.log(JSON.stringify(uploadResult));
+      
       res.send(`File uploaded successfully. Location:`);
+      const xhr = new XMLHttpRequest();
+      const url = 'https://dev2-neilon-dev-ed.develop.my.salesforce.com/services/apexrest/NEILON/S3Link/v1/creates3files/';
+
+      xhr.open('POST', url, true);
+      xhr.setRequestHeader('Authorization', 'Bearer 00DGB000002FWLe!ARcAQJCmTnHimT26iLsjf7nyWISRvsVkg1ZuRFVq8SwIwsu3kKeqqcMT3D09jnQh_wGC_bS0FPRcScNV5FYSjULmZe1pPn2A');
+      xhr.setRequestHeader('Content-Type', 'application/json');
+
+      const body = [
+        {
+          "Name": "Screenshot? (1)",
+          "NEILON__Bucket_Name__c": "neilon-dev2",
+          "NEILON__Amazon_File_Key__c": "Accounts/Burlington Textiles Corp of America/Screenshot- (1).png",
+          "NEILON__Size__c": 178893,
+          "NEILON__Account__c": "001GB00003B1jEgYAJ"
+        }
+      ];
+
+      xhr.onload = function () {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+          debugger;
+          const response = JSON.parse(xhr.responseText);
+          console.log('Method Success', response);
+        } else {
+          console.log('ERROR:', xhr.status, xhr.statusText);
+        }
+      };
+
+      xhr.onerror = function (e) {
+        console.error('Request failed:', e);
+      };
+
+      xhr.send(JSON.stringify(body));
     } catch (error) {
       console.error('Error fetching Salesforce 124 data:', error);
       res.status(500).send(`Error: ${error || 'An unexpected error occurred.'}`);
