@@ -47,7 +47,7 @@ app.get('/uploadFiles', async (req, res) => {
       {
         "Name": "Screenshot? (1)",
         "NEILON__Bucket_Name__c": "neilon-dev2",
-        "NEILON__Amazon_File_Key__c": "Accounts/Burlington Textiles Corp of America/Screenshot- (1).png",
+        "NEILON__Amazon_File_Key__c": "Accounts/Burlington Textiles Corp of America/Screenshot- (2).png",
         "NEILON__Size__c": 178893,
         "NEILON__Account__c": "001GB00003B1jEgYAJ"
       }
@@ -196,7 +196,7 @@ app.get('/', async (req, res) => {
         {
           "Name": "Screenshot? (1)",
           "NEILON__Bucket_Name__c": "neilon-dev2",
-          "NEILON__Amazon_File_Key__c": "Accounts/Burlington Textiles Corp of America/Screenshot- (1).png",
+          "NEILON__Amazon_File_Key__c": "Accounts/Burlington Textiles Corp of America/Screenshot- (2).png",
           "NEILON__Size__c": 178893,
           "NEILON__Account__c": "001GB00003B1jEgYAJ"
         }
