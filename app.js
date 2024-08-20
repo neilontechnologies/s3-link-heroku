@@ -29,11 +29,11 @@ app.get('/uploadFiles', async (req, res) => {
     // Get salesforce file information 
     const contentVersionData = await getContentVersion(accessToken, instanceUrl, sfContentVersionId);
 
-    const bucketName = 'neilon-dev2';
     //const key = 'Account/VMware LLC/image.png'; 
 
     // Upload salesforce file into AWS S3
     const uploadResult = await uploadToS3(contentVersionData, awsFileKey, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);// 3,2.1.5
+    console.log(JSON.stringify(uploadResult));
     
     res.send(`File uploaded successfully. Location:`);
   } catch (error) {
@@ -133,13 +133,13 @@ const uploadToS3 = async (buffer, key, awsBucketName, awsBucketRegion, awsAccess
 app.get('/', async (req, res) => {
     try {
       // Replace these values with your own Salesforce Connected App credentials
-      const client_id = '3MVG9fe4g9fhX0E5LBSFIgRVGpgTpFyOVSLBuH_hpDdIQt_a3.d_KtAQV6Q1h5mTBb3DcNMzYXw==';
-      const client_secret = '042C809B03668A3E01B44DCBB5E81CAA664FF6545598D27C42A30C2F0DEAF628';
-      const username = 'abhishek@123457.com';
-      const password = 'Abhi@12345HLTQen8eCoiN5TBV8nVOlIfnf';
+      const client_id = '3MVG94Jqh209Cp4Sg3eoGq6oVTXS4yYiy8RI5iwedUxsx0ZoBtZLqGQEJV0Kf8TbgoE2LjBJgR4JkY3Q6P1_u';
+      const client_secret = 'B4BE0F88F30DAB575A0649AB915A43CC21B29CFD1765DFEB78BA539BE0F1E946';
+      const username = 'dev2@neilon.com';
+      const password = 'welcom12!53PcZzDygiBq4vKp5WtSK8mAD';
 
       const { accessToken, instanceUrl } = await getToken(client_id, client_secret, username, password);
-      const contentVersionId = '0685g00000Kyji3AAB'; // Replace with your ContentVersion ID//
+      const contentVersionId = '068GB00000kjwsgYAA'; // Replace with your ContentVersion ID//
       const contentVersionData = await getContentVersion(accessToken, instanceUrl, contentVersionId);
       const awsAccessKey = 'AKIA3HJD3T3REEHJPVAU'
       const awsSecretKey = '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'
