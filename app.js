@@ -22,6 +22,9 @@ app.get('/uploadFiles', async (req, res) => {
     const awsBucketName = req.headers['aws-bucket-name'];
     const awsBucketRegion = req.headers['aws-bucket-region'];
     const awsFileKey = req.headers['aws-file-key']
+    const sfFileName = req.headers['sf-file-name'];
+    const sfFileSize = parseInt(req.headers['sf-file-size'], 10)
+    const sfObjectId = req.headers['sf-object-id']
 
     // Get access token of salesforce
     const { accessToken, instanceUrl } = await getToken(sfClientId, sfClientSecret, sfUsername, sfPassword);
@@ -45,11 +48,11 @@ app.get('/uploadFiles', async (req, res) => {
 
     const body = [
       {
-        "Name": "Screenshot? (1)",
+        "Name": sfFileName,
         "NEILON__Bucket_Name__c": awsBucketName,
         "NEILON__Amazon_File_Key__c": awsFileKey,
-        "NEILON__Size__c": 178893,
-        "NEILON__Account__c": "001GB00003B1jEgYAJ"
+        "NEILON__Size__c": 123454,
+        "NEILON__Account__c": sfObjectId
       }
     ];
 
@@ -179,6 +182,9 @@ app.get('/', async (req, res) => {
 
       const awsBucketName = 'neilon-dev2';
       const key = 'Account/VMware LLC/image.png'; 
+      const name = 'Appex String.png'
+      //const sfFileSize = parseInt('', 10)
+      //const sfObjectId = req.headers['sf-object-id']
 
       // Upload the Blob to S3
       const uploadResult = await uploadToS3(contentVersionData, key, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);
