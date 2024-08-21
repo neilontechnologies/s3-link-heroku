@@ -21,16 +21,15 @@ app.get('/uploadFiles', async (req, res) => {
     const sfPassword = req.headers['sf-password'];
     const awsBucketName = req.headers['aws-bucket-name'];
     const awsBucketRegion = req.headers['aws-bucket-region'];
-    const awsFileKey = req.headers['aws-file-key']
+    const awsFileKey = req.headers['aws-file-key'];
     const sfFileSize = parseInt(req.headers['sf-file-size'], 10)
+    const sfContentDocumentId = req.headers['sf-content-document-id']; 
 
     // Get access token of salesforce
     const { accessToken, instanceUrl } = await getToken(sfClientId, sfClientSecret, sfUsername, sfPassword);
 
     // Get salesforce file information 
     const contentVersionData = await getContentVersion(accessToken, instanceUrl, sfContentVersionId);
-
-    //const key = 'Account/VMware LLC/image.png'; 
 
     // Upload salesforce file into AWS S3
     const uploadResult = await uploadToS3(contentVersionData, awsFileKey, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);// 3,2.1.5
@@ -48,6 +47,8 @@ app.get('/uploadFiles', async (req, res) => {
         "NEILON__Bucket_Name__c": awsBucketName,
         "NEILON__Amazon_File_Key__c": awsFileKey,
         "NEILON__Size__c": sfFileSize,
+        "NEILON__Content_Document_Id__c": sfContentDocumentId,
+        "NEILON__Export_Attachment_Id__c": sfContentVersionId
       }
     ];
 
