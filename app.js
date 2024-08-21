@@ -22,9 +22,7 @@ app.get('/uploadFiles', async (req, res) => {
     const awsBucketName = req.headers['aws-bucket-name'];
     const awsBucketRegion = req.headers['aws-bucket-region'];
     const awsFileKey = req.headers['aws-file-key']
-    const sfFileName = req.headers['sf-file-name'];
     const sfFileSize = parseInt(req.headers['sf-file-size'], 10)
-    const sfObjectId = req.headers['sf-object-id']
 
     // Get access token of salesforce
     const { accessToken, instanceUrl } = await getToken(sfClientId, sfClientSecret, sfUsername, sfPassword);
@@ -40,19 +38,16 @@ app.get('/uploadFiles', async (req, res) => {
     
     res.send(`File uploaded successfully. Location:`);
     const xhr = new XMLHttpRequest();
-    const url = 'https://dev2-neilon-dev-ed.develop.my.salesforce.com/services/apexrest/NEILON/S3Link/v1/creates3files/';
-
+    const url = `${instanceUrl}/services/apexrest/NEILON/S3Link/v1/creates3files/`
     xhr.open('POST', url, true);
     xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
     xhr.setRequestHeader('Content-Type', 'application/json');
 
     const body = [
       {
-        //"Name": 'Appex String',//
         "NEILON__Bucket_Name__c": awsBucketName,
         "NEILON__Amazon_File_Key__c": awsFileKey,
         "NEILON__Size__c": sfFileSize,
-        //"NEILON__Account__c": '001GB00003B1jEgYAJ'//
       }
     ];
 
