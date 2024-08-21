@@ -48,11 +48,11 @@ app.get('/uploadFiles', async (req, res) => {
 
     const body = [
       {
-        "Name": 'Appex String',//
+        //"Name": 'Appex String',//
         "NEILON__Bucket_Name__c": awsBucketName,
         "NEILON__Amazon_File_Key__c": awsFileKey,
-        "NEILON__Size__c": 173772,
-        "NEILON__Account__c": '001GB00003B1jEgYAJ'//
+        "NEILON__Size__c": sfFileSize,
+        //"NEILON__Account__c": '001GB00003B1jEgYAJ'//
       }
     ];
 
