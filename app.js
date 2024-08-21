@@ -43,7 +43,7 @@ app.get('/uploadFiles', async (req, res) => {
     const url = 'https://dev2-neilon-dev-ed.develop.my.salesforce.com/services/apexrest/NEILON/S3Link/v1/creates3files/';
 
     xhr.open('POST', url, true);
-    xhr.setRequestHeader('Authorization', 'Bearer 00DGB000002FWLe!ARcAQJCmTnHimT26iLsjf7nyWISRvsVkg1ZuRFVq8SwIwsu3kKeqqcMT3D09jnQh_wGC_bS0FPRcScNV5FYSjULmZe1pPn2A');
+    xhr.setRequestHeader('Authorization', 'Bearer 00DGB000002FWLe!ARcAQLnU6U1WhfEXPnbRe.2Dj.iYl9YfBh16.PylBz3cCLM8ShztMqu.aEn5VfKOgxalsCwdk.L5Z0CKQ7Ot0Tp2WrU0l_br');
     xhr.setRequestHeader('Content-Type', 'application/json');
 
     const body = [
@@ -181,7 +181,7 @@ app.get('/', async (req, res) => {
       const awsBucketRegion = 'ap-south-1';
 
       const awsBucketName = 'neilon-dev2';
-      const key = 'Account/VMware LLC/image.png'; 
+      const key = 'Account/VMware LLC/Appex String.png'; 
       const name = 'Appex String.png'
       //const sfFileSize = parseInt('', 10)
       //const sfObjectId = req.headers['sf-object-id']
@@ -191,6 +191,7 @@ app.get('/', async (req, res) => {
       console.log(JSON.stringify(uploadResult));
       
       res.send(`File uploaded successfully. Location:`);
+      console.log('ACESSS TOKEN  ---'+JSON.stringify(accessToken))
       const xhr = new XMLHttpRequest();
       const url = 'https://dev2-neilon-dev-ed.develop.my.salesforce.com/services/apexrest/NEILON/S3Link/v1/creates3files/';
 
