@@ -25,48 +25,52 @@ app.get('/uploadFiles', async (req, res) => {
     const sfFileSize = parseInt(req.headers['sf-file-size'], 10)
     const sfContentDocumentId = req.headers['sf-content-document-id']; 
 
-    // Get access token of salesforce
-    const { accessToken, instanceUrl } = await getToken(sfClientId, sfClientSecret, sfUsername, sfPassword);
-
-    // Get salesforce file information 
-    const contentVersionData = await getContentVersion(accessToken, instanceUrl, sfFileId);
-
-    // Upload salesforce file into AWS S3
-    const uploadResult = await uploadToS3(contentVersionData, awsFileKey, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);
-    console.log(JSON.stringify(uploadResult));
-    
     res.send(`File uploaded successfully. Location:`);
-    const xhr = new XMLHttpRequest();
-    const url = `${instanceUrl}/services/apexrest/NEILON/S3Link/v1/creates3files/`
-    xhr.open('POST', url, true);
-    xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
-    xhr.setRequestHeader('Content-Type', 'application/json');
+    if(sfClientId && sfClientSecret && sfUsername && sfPassword && sfFileSize &&  sfFileId && awsBucketName && awsBucketRegion && awsFileKey ){
+      // Get access token of salesforce
+      const { accessToken, instanceUrl } = await getToken(sfClientId, sfClientSecret, sfUsername, sfPassword);
 
-    const body = [
-      {
-        "NEILON__Bucket_Name__c": awsBucketName,
-        "NEILON__Amazon_File_Key__c": awsFileKey,
-        "NEILON__Size__c": sfFileSize,
-        "NEILON__Content_Document_Id__c": sfContentDocumentId, 
-        "NEILON__Export_Attachment_Id__c": sfFileId// sf-file-id
-      }
-    ];
+      // Get salesforce file information 
+      const contentVersionData = await getContentVersion(accessToken, instanceUrl, sfFileId);
 
-    xhr.onload = function () {
-      if (xhr.readyState === 4 && xhr.status === 200) {
-        debugger;
-        const response = JSON.parse(xhr.responseText);
-        console.log('Method Success', response);
-      } else {
-        console.log('ERROR:', xhr.status, xhr.statusText);
-      }
-    };
+      // Upload salesforce file into AWS S3
+      const uploadResult = await uploadToS3(contentVersionData, awsFileKey, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);
+      console.log(JSON.stringify(uploadResult));
+      
+      const xhr = new XMLHttpRequest();
+      const url = `${instanceUrl}/services/apexrest/NEILON/S3Link/v1/creates3files/`
+      xhr.open('POST', url, true);
+      xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
+      xhr.setRequestHeader('Content-Type', 'application/json');
 
-    xhr.onerror = function (e) {
-      console.error('Request failed:', e);
-    };
+      const body = [
+        {
+          "NEILON__Bucket_Name__c": awsBucketName,
+          "NEILON__Amazon_File_Key__c": awsFileKey,
+          "NEILON__Size__c": sfFileSize,
+          "NEILON__Content_Document_Id__c": sfContentDocumentId, 
+          "NEILON__Export_Attachment_Id__c": sfFileId// sf-file-id
+        }
+      ];
 
-    xhr.send(JSON.stringify(body));
+      xhr.onload = function () {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+          debugger;
+          const response = JSON.parse(xhr.responseText);
+          console.log('Method Success', response);
+        } else {
+          console.log('ERROR:', xhr.status, xhr.statusText);
+        }
+      };
+
+      xhr.onerror = function (e) {
+        console.error('Request failed:', e);
+      };
+
+      xhr.send(JSON.stringify(body));
+    } else {
+      throw new Error(`Incorrect salesforce or AWS data:`);
+    }
   } catch (error) {
     console.error('Error fetching Salesforce 124 data:', error);
     console.log(JSON.stringify(error));
