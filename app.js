@@ -29,7 +29,6 @@ app.get('/uploadFiles', async (req, res) => {
       // Get access token of salesforce
       const { accessToken, instanceUrl } = await getToken(sfClientId, sfClientSecret, sfUsername, sfPassword);
 
-      res.send(`File uploaded successfully. Location: ${accessToken}`);
       // Get salesforce file information 
       const contentVersionData = await getContentVersion(accessToken, instanceUrl, sfFileId);
 
@@ -40,6 +39,7 @@ app.get('/uploadFiles', async (req, res) => {
       const xhr = new XMLHttpRequest();
       const url = `${instanceUrl}/services/apexrest/NEILON/S3Link/v1/creates3files/`
       xhr.open('POST', url, true);
+      res.send(`File uploaded successfully. Location: ${accessToken}`);
       xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
       xhr.setRequestHeader('Content-Type', 'application/json');
 
