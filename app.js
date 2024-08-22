@@ -116,7 +116,13 @@ const getToken = (sfClientId, sfClientSecret, sfUsername, sfPassword) => {
 // This method is used to get salesforce file information with the help of access token of that org, URL, salesforce fild id  
 const getContentVersion = async (accessToken, instanceUrl, sfFileId) => {// getSalesforceFile
   console.log('Method Calling get content version');// ContentVersion -  Attachment  , VersionData - Body 
-  const url = `${instanceUrl}/services/data/v58.0/sobjects/ContentVersion/${sfFileId}/VersionData`;
+  var url;
+  if(sfFileId.startsWith('00P')){
+    url = `${instanceUrl}/services/data/v58.0/sobjects/Attachment/${sfFileId}/Body`;
+  } else {
+    url = `${instanceUrl}/services/data/v58.0/sobjects/ContentVersion/${sfFileId}/VersionData`;
+  }
+  
 
   try {
     const response = await fetch(url, {
@@ -174,7 +180,7 @@ app.get('/', async (req, res) => {
       const password = 'welcom12!53PcZzDygiBq4vKp5WtSK8mAD';
 
       const { accessToken, instanceUrl } = await getToken(client_id, client_secret, username, password);
-      const contentVersionId = '068GB00000kjwsgYAA'; // Replace with your ContentVersion ID//
+      const contentVersionId = '00PGB00002rkWxi2AE'; // Replace with your ContentVersion ID//
       const contentVersionData = await getContentVersion(accessToken, instanceUrl, contentVersionId);
       const awsAccessKey = 'AKIA3HJD3T3REEHJPVAU'
       const awsSecretKey = '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'
@@ -193,7 +199,7 @@ app.get('/', async (req, res) => {
       const xhr = new XMLHttpRequest();
       const url = 'https://dev2-neilon-dev-ed.develop.my.salesforce.com/services/apexrest/NEILON/S3Link/v1/creates3files/';
 
-      xhr.open('POST', url, true);
+      /*xhr.open('POST', url, true);
       xhr.setRequestHeader('Authorization', 'Bearer 00DGB000002FWLe!ARcAQJCmTnHimT26iLsjf7nyWISRvsVkg1ZuRFVq8SwIwsu3kKeqqcMT3D09jnQh_wGC_bS0FPRcScNV5FYSjULmZe1pPn2A');
       xhr.setRequestHeader('Content-Type', 'application/json');
 
@@ -221,7 +227,7 @@ app.get('/', async (req, res) => {
         console.error('Request failed:', e);
       };
 
-      xhr.send(JSON.stringify(body));
+      xhr.send(JSON.stringify(body));*/
     } catch (error) {
       console.error('Error fetching Salesforce 124 data:', error);
       res.status(500).send(`Error: ${error || 'An unexpected error occurred.'}`);
