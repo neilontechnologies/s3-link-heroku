@@ -25,11 +25,11 @@ app.get('/uploadFiles', async (req, res) => {
     const sfFileSize = parseInt(req.headers['sf-file-size'], 10)
     const sfContentDocumentId = req.headers['sf-content-document-id']; 
 
-    res.send(`File uploaded successfully. Location:`);
     if(sfClientId && sfClientSecret && sfUsername && sfPassword && sfFileSize &&  sfFileId && awsBucketName && awsBucketRegion && awsFileKey ){
       // Get access token of salesforce
       const { accessToken, instanceUrl } = await getToken(sfClientId, sfClientSecret, sfUsername, sfPassword);
 
+      res.send(`File uploaded successfully. Location: ${accessToken}`);
       // Get salesforce file information 
       const contentVersionData = await getContentVersion(accessToken, instanceUrl, sfFileId);
 
