@@ -12,7 +12,7 @@ const XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
 // This method to upload salesforce files into AWS S3 dynamatically from salesforce method
 app.get('/uploadFiles', async (req, res) => {
   try {
-    const sfContentVersionId = req.headers['sf-content-version-id']; 
+    const sfFileId = req.headers['sf-file-id']; 
     const awsAccessKey = req.headers['aws-access-key'];
     const awsSecretKey = req.headers['aws-secret-key'];
     const sfClientId = req.headers['sf-client-id'];
@@ -29,10 +29,10 @@ app.get('/uploadFiles', async (req, res) => {
     const { accessToken, instanceUrl } = await getToken(sfClientId, sfClientSecret, sfUsername, sfPassword);
 
     // Get salesforce file information 
-    const contentVersionData = await getContentVersion(accessToken, instanceUrl, sfContentVersionId);
+    const contentVersionData = await getContentVersion(accessToken, instanceUrl, sfFileId);
 
     // Upload salesforce file into AWS S3
-    const uploadResult = await uploadToS3(contentVersionData, awsFileKey, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);// 3,2.1.5
+    const uploadResult = await uploadToS3(contentVersionData, awsFileKey, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);
     console.log(JSON.stringify(uploadResult));
     
     res.send(`File uploaded successfully. Location:`);
@@ -47,8 +47,8 @@ app.get('/uploadFiles', async (req, res) => {
         "NEILON__Bucket_Name__c": awsBucketName,
         "NEILON__Amazon_File_Key__c": awsFileKey,
         "NEILON__Size__c": sfFileSize,
-        "NEILON__Content_Document_Id__c": sfContentDocumentId,
-        "NEILON__Export_Attachment_Id__c": sfContentVersionId
+        "NEILON__Content_Document_Id__c": sfContentDocumentId, 
+        "NEILON__Export_Attachment_Id__c": sfFileId// sf-file-id
       }
     ];
 
@@ -110,9 +110,9 @@ const getToken = (sfClientId, sfClientSecret, sfUsername, sfPassword) => {
 
 
 // This method is used to get salesforce file information with the help of access token of that org, URL, salesforce fild id  
-const getContentVersion = async (accessToken, instanceUrl, sfContentVersionId) => {
-  console.log('Method Calling get content version');
-  const url = `${instanceUrl}/services/data/v58.0/sobjects/ContentVersion/${sfContentVersionId}/VersionData`;
+const getContentVersion = async (accessToken, instanceUrl, sfFileId) => {// getSalesforceFile
+  console.log('Method Calling get content version');// ContentVersion -  Attachment  , VersionData - Body 
+  const url = `${instanceUrl}/services/data/v58.0/sobjects/ContentVersion/${sfFileId}/VersionData`;
 
   try {
     const response = await fetch(url, {
@@ -179,8 +179,6 @@ app.get('/', async (req, res) => {
       const awsBucketName = 'neilon-dev2';
       const key = 'Account/VMware LLC/Appex String.png'; 
       const name = 'Appex String.png'
-      //const sfFileSize = parseInt('', 10)
-      //const sfObjectId = req.headers['sf-object-id']
 
       // Upload the Blob to S3
       const uploadResult = await uploadToS3(contentVersionData, key, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);
