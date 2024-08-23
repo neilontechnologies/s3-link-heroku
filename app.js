@@ -15,7 +15,8 @@ app.use((req, res, next) => {
   const validAccessKey = 'ABC'; // Replace with your actual secret key
 
   if (providedAccessKey === validAccessKey) {
-    next(); // Access key is valid, proceed to the route
+    res.send('AUTHENTICATE SUCESSFULL');
+    //next(); // Access key is valid, proceed to the route
   } else {
     res.status(403).send('Forbidden: Invalid Access Key');
   }
