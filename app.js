@@ -16,7 +16,7 @@ app.use((req, res, next) => {
 
   if (providedAccessKey === validAccessKey) {
     res.send('AUTHENTICATE SUCESSFULL');
-    //next(); // Access key is valid, proceed to the route
+    next(); // Access key is valid, proceed to the route
   } else {
     res.status(403).send('Forbidden: Invalid Access Key');
   }
