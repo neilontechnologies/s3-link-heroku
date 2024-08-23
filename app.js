@@ -9,6 +9,18 @@ app.use(cors());
 
 const XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
 
+
+app.use((req, res, next) => {
+  const providedAccessKey = req.headers['x-access-key'];
+  const validAccessKey = 'ABC'; // Replace with your actual secret key
+
+  if (providedAccessKey === validAccessKey) {
+    next(); // Access key is valid, proceed to the route
+  } else {
+    res.status(403).send('Forbidden: Invalid Access Key');
+  }
+});
+
 // This method to upload salesforce files into AWS S3 dynamatically from salesforce method
 app.get('/uploadFiles', async (req, res) => {
   try {
