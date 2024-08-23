@@ -47,39 +47,41 @@ app.get('/uploadFiles', async (req, res) => {
       // Upload salesforce file into AWS S3
       const uploadResult = await uploadToS3(contentVersionData, awsFileKey, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);
       console.log(JSON.stringify(uploadResult));
-      
-      const xhr = new XMLHttpRequest();
-      const url = `${instanceUrl}/services/apexrest/NEILON/S3Link/v1/creates3files/`
-      xhr.open('POST', url, true);
-      res.send(`File uploaded successfully. Location: ${accessToken}`);
-      xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
-      xhr.setRequestHeader('Content-Type', 'application/json');
 
-      const body = [
-        {
-          "NEILON__Bucket_Name__c": awsBucketName,
-          "NEILON__Amazon_File_Key__c": awsFileKey,
-          "NEILON__Size__c": sfFileSize,
-          "NEILON__Content_Document_Id__c": sfContentDocumentId, 
-          "NEILON__Export_Attachment_Id__c": sfFileId// sf-file-id
-        }
-      ];
-
-      xhr.onload = function () {
-        if (xhr.readyState === 4 && xhr.status === 200) {
-          debugger;
-          const response = JSON.parse(xhr.responseText);
-          console.log('Method Success', response);
-        } else {
-          console.log('ERROR:', xhr.status, xhr.statusText);
-        }
-      };
-
-      xhr.onerror = function (e) {
-        console.error('Request failed:', e);
-      };
-
-      xhr.send(JSON.stringify(body));
+      if (uploadResult.$metadata.httpStatusCode === 200) {
+        const xhr = new XMLHttpRequest();
+        const url = `${instanceUrl}/services/apexrest/NEILON/S3Link/v1/creates3files/`
+        xhr.open('POST', url, true);
+        res.send(`File uploaded successfully. Location: ${accessToken}`);
+        xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+  
+        const body = [
+          {
+            "NEILON__Bucket_Name__c": awsBucketName,
+            "NEILON__Amazon_File_Key__c": awsFileKey,
+            "NEILON__Size__c": sfFileSize,
+            "NEILON__Content_Document_Id__c": sfContentDocumentId, 
+            "NEILON__Export_Attachment_Id__c": sfFileId// sf-file-id
+          }
+        ];
+  
+        xhr.onload = function () {
+          if (xhr.readyState === 4 && xhr.status === 200) {
+            debugger;
+            const response = JSON.parse(xhr.responseText);
+            console.log('Method Success', response);
+          } else {
+            console.log('ERROR:', xhr.status, xhr.statusText);
+          }
+        };
+  
+        xhr.onerror = function (e) {
+          console.error('Request failed:', e);
+        };
+  
+        xhr.send(JSON.stringify(body));
+      }
     } else {
       throw new Error(`Incorrect salesforce or AWS data:`);
     }
