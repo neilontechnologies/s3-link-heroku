@@ -2,6 +2,7 @@ const express = require('express');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const cors = require('cors');
 const app = express();
+const jwt = require('jsonwebtoken');
 
 app.use(express.urlencoded({extended:true}));
 app.use(express.json());
@@ -10,14 +11,21 @@ app.use(cors());
 const XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
 
 
-app.use((req, res, next) => {
-  const providedAccessKey = req.headers['x-access-key'];
-  const validAccessKey = 'ABC'; 
+const secretKey = 'your-secret-key'; // Should be the same key used to sign JWTs
 
-  if (providedAccessKey === validAccessKey) {
-    next(); // Access key is valid, proceed to the route
+app.use((req, res, next) => {
+  const token = req.headers['authorization']?.split(' ')[1]; // Extract token from Authorization header
+
+  if (token) {
+    jwt.verify(token, secretKey, (err, decoded) => {
+      if (err) {
+        return res.status(401).send('Unauthorized: Invalid token');
+      }
+      req.user = decoded; // Attach decoded token to request
+      next();
+    });
   } else {
-    res.status(403).send('Forbidden: Invalid Access Key');
+    res.status(401).send('Unauthorized: No token provided');
   }
 });
 
