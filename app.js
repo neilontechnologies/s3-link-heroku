@@ -11,7 +11,7 @@ app.use(cors());
 const XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
 
 
-const secretKey = 'your-secret-key'; // Should be the same key used to sign JWTs
+const secretKey = 'f0e5b4a3c7e98d2f9b14e1a0e2c3d4f5g6h7i8j9k0lmnopqrstu1234567890abcdef'; // Should be the same key used to sign JWTs
 
 app.use((req, res, next) => {
   const token = req.headers['authorization']?.split(' ')[1]; // Extract token from Authorization header
