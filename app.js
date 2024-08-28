@@ -13,9 +13,8 @@ const XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
 app.use((req, res, next) => {
   const apiKey = process.env.API_KEY;
   const providedAccessKey = req.headers['x-access-key'];
-  const validAccessKey = apiKey; 
 
-  if (providedAccessKey === validAccessKey) {
+  if (providedAccessKey === apiKey) {
     next(); // Access key is valid, proceed to the route
   } else {
     res.status(403).send('Forbidden: Invalid Access Key');
