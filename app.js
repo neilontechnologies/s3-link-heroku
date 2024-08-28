@@ -11,8 +11,9 @@ const XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
 
 
 app.use((req, res, next) => {
+  const apiKey = process.env.API_KEY;
   const providedAccessKey = req.headers['x-access-key'];
-  const validAccessKey = 'ABC'; 
+  const validAccessKey = apiKey; 
 
   if (providedAccessKey === validAccessKey) {
     next(); // Access key is valid, proceed to the route
