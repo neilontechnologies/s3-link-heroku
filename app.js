@@ -10,16 +10,15 @@ app.use(cors());
 const XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
 
 
-const secretKey = 'f0e5b4a3c7e98d2f9b14e1a0e2c3d4f5g6h7i8j9k0lmnopqrstu1234567890abcdef'; // Should be the same key used to sign JWTs
-
 app.use((req, res, next) => {
-  const token = req.headers['authorization'];
-    if(token == secretKey){
-      next();
-    }
-    else {
-      res.status(403).send('Unauthorized: No token provided');
-    }
+  const providedAccessKey = req.headers['x-access-key'];
+  const validAccessKey = 'ABC'; 
+
+  if (providedAccessKey === validAccessKey) {
+    next(); // Access key is valid, proceed to the route
+  } else {
+    res.status(403).send('Forbidden: Invalid Access Key');
+  }
 });
 
 // This method to upload salesforce files into AWS S3 dynamatically from salesforce method
