@@ -14,7 +14,6 @@
     "@aws-sdk/s3-request-presigner": "^3.627.0",
     "cors": "^2.8.5",
     "express": "^4.19.2",
-    "jsonwebtoken": "^9.0.2",
     "nforce": "^1.13.0",
     "save": "^2.9.0",
     "xmlhttprequest": "^1.8.0"

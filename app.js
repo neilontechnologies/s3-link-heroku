@@ -2,7 +2,6 @@ const express = require('express');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const cors = require('cors');
 const app = express();
-const jwt = require('jsonwebtoken');
 
 app.use(express.urlencoded({extended:true}));
 app.use(express.json());
@@ -14,19 +13,13 @@ const XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
 const secretKey = 'f0e5b4a3c7e98d2f9b14e1a0e2c3d4f5g6h7i8j9k0lmnopqrstu1234567890abcdef'; // Should be the same key used to sign JWTs
 
 app.use((req, res, next) => {
-  const token = req.headers['authorization']?.split(' ')[1]; // Extract token from Authorization header
-
-  if (token) {
-    jwt.verify(token, secretKey, (err, decoded) => {
-      if (err) {
-        return res.status(401).send('Unauthorized: Invalid token');
-      }
-      req.user = decoded; // Attach decoded token to request
+  const token = req.headers['authorization'];
+    if(token == secretKey){
       next();
-    });
-  } else {
-    res.status(401).send('Unauthorized: No token provided');
-  }
+    }
+    else {
+      res.status(403).send('Unauthorized: No token provided');
+    }
 });
 
 // This method to upload salesforce files into AWS S3 dynamatically from salesforce method
