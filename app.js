@@ -15,7 +15,7 @@ app.use((req, res, next) => {
   const providedAccessKey = req.headers['heroku-api-key'];
 
   if (providedAccessKey === apiKey) {
-    next(); // Access key is valid, proceed to the route
+    next(); 
   } else {
     res.status(403).send('Forbidden: Invalid Access Key');
   }
@@ -48,14 +48,16 @@ app.get('/uploadFiles', async (req, res) => {
       // Upload salesforce file into AWS S3
       const uploadResult = await uploadToS3(contentVersionData, awsFileKey, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);
 
+      // Create S3 file record in salesforce org
       if (uploadResult.$metadata.httpStatusCode === 200) {
         const xhr = new XMLHttpRequest();
         const url = `${instanceUrl}/services/apexrest/NEILON/S3Link/v1/creates3files/`
         xhr.open('POST', url, true);
-        res.send(`File uploaded successfully. Location: ${accessToken}`);
+        res.send(`File uploaded successfully.`);
         xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
         xhr.setRequestHeader('Content-Type', 'application/json');
   
+        // Prepare S3 file data for File object
         const body = [
           {
             "NEILON__Bucket_Name__c": awsBucketName,
@@ -86,7 +88,6 @@ app.get('/uploadFiles', async (req, res) => {
     }
   } catch (error) {
     console.error('Error fetching Salesforce 124 data:', error);
-    console.log(JSON.stringify(error));
     res.status(500).send(`Error: ${error || 'An unexpected error occurred.'}`);
   }
 });
@@ -126,11 +127,10 @@ const getToken = (sfClientId, sfClientSecret, sfUsername, sfPassword) => {
 };
 
 
-// This method is used to get salesforce file information with the help of access token of that org, URL, salesforce fild id  
+// This method is used to get salesforce file information with the help of access token of that org, URL, salesforce file id  
 const getContentVersion = async (accessToken, instanceUrl, sfFileId) => {
   
   var url;
-
   // Preprae url of attachments or content document
   if(sfFileId.startsWith('00P')){
     url = `${instanceUrl}/services/data/v58.0/sobjects/Attachment/${sfFileId}/Body`;
