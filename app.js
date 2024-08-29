@@ -12,7 +12,7 @@ const XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
 
 app.use((req, res, next) => {
   const apiKey = process.env.API_KEY;
-  const providedAccessKey = req.headers['x-access-key'];
+  const providedAccessKey = req.headers['heroku-api-key'];
 
   if (providedAccessKey === apiKey) {
     next(); // Access key is valid, proceed to the route
@@ -62,7 +62,7 @@ app.get('/uploadFiles', async (req, res) => {
             "NEILON__Amazon_File_Key__c": awsFileKey,
             "NEILON__Size__c": sfFileSize,
             "NEILON__Content_Document_Id__c": sfContentDocumentId, 
-            "NEILON__Export_Attachment_Id__c": sfFileId// sf-file-id
+            "NEILON__Export_Attachment_Id__c": sfFileId
           }
         ];
   
