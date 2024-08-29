@@ -9,7 +9,7 @@ app.use(cors());
 
 const XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
 
-
+// Use to authenticate heroku access key
 app.use((req, res, next) => {
   const apiKey = process.env.API_KEY;
   const providedAccessKey = req.headers['heroku-api-key'];
@@ -21,7 +21,7 @@ app.use((req, res, next) => {
   }
 });
 
-// This method to upload salesforce files into AWS S3 dynamatically from salesforce method
+// This method is used to upload salesforce files into AWS S3 dynamatically from salesforce call
 app.get('/uploadFiles', async (req, res) => {
   try {
     const sfFileId = req.headers['sf-file-id']; 
@@ -38,6 +38,7 @@ app.get('/uploadFiles', async (req, res) => {
     const sfContentDocumentId = req.headers['sf-content-document-id']; 
 
     if(sfClientId && sfClientSecret && sfUsername && sfPassword && sfFileSize &&  sfFileId && awsBucketName && awsBucketRegion && awsFileKey ){
+
       // Get access token of salesforce
       const { accessToken, instanceUrl } = await getToken(sfClientId, sfClientSecret, sfUsername, sfPassword);
 
@@ -46,7 +47,6 @@ app.get('/uploadFiles', async (req, res) => {
 
       // Upload salesforce file into AWS S3
       const uploadResult = await uploadToS3(contentVersionData, awsFileKey, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);
-      console.log(JSON.stringify(uploadResult));
 
       if (uploadResult.$metadata.httpStatusCode === 200) {
         const xhr = new XMLHttpRequest();
@@ -70,7 +70,6 @@ app.get('/uploadFiles', async (req, res) => {
           if (xhr.readyState === 4 && xhr.status === 200) {
             debugger;
             const response = JSON.parse(xhr.responseText);
-            console.log('Method Success', response);
           } else {
             console.log('ERROR:', xhr.status, xhr.statusText);
           }
@@ -128,25 +127,27 @@ const getToken = (sfClientId, sfClientSecret, sfUsername, sfPassword) => {
 
 
 // This method is used to get salesforce file information with the help of access token of that org, URL, salesforce fild id  
-const getContentVersion = async (accessToken, instanceUrl, sfFileId) => {// getSalesforceFile
-  console.log('Method Calling get content version');// ContentVersion -  Attachment  , VersionData - Body 
+const getContentVersion = async (accessToken, instanceUrl, sfFileId) => {
+  
   var url;
+
+  // Preprae url of attachments or content document
   if(sfFileId.startsWith('00P')){
     url = `${instanceUrl}/services/data/v58.0/sobjects/Attachment/${sfFileId}/Body`;
   } else {
     url = `${instanceUrl}/services/data/v58.0/sobjects/ContentVersion/${sfFileId}/VersionData`;
   }
   
-
+  // To authenticate salesforce
   try {
     const response = await fetch(url, {
       headers: {
         'Authorization': `Bearer ${accessToken}`
       }
     });
+
     //Returns the response status code
     if (!response.ok) {
-      console.log('GETTING AN ERROR');
       throw new Error(`Failed to fetch ContentVersion data: ${response.statusText}`);
     }
     const blob = await response.blob();
@@ -154,7 +155,6 @@ const getContentVersion = async (accessToken, instanceUrl, sfFileId) => {// getS
     const buffer = Buffer.from(arrayBuffer);
     return buffer;
   } catch (error) {
-    console.log(error, 'GETTING');
     console.error('Error fetching ContentVersion data:', error);
     throw error;
   }
@@ -163,13 +163,15 @@ const getContentVersion = async (accessToken, instanceUrl, sfFileId) => {// getS
 // This method is used to upload salesforce file into AWS S3 with the help of provided AWS data
 const uploadToS3 = async (buffer, key, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey) => {
   try {
-    console.log('Uploading to S3...');
+
+    // Prepare AWS data
     const command = new PutObjectCommand({
         Bucket: awsBucketName,
         Key: key,
         Body: buffer,
     });
 
+    // Create client credentails
     const s3Client = new S3Client({
       region: awsBucketRegion,
       credentials: {
