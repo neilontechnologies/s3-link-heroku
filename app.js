@@ -219,38 +219,42 @@ app.get('/', async (req, res) => {
       
       res.send(`File uploaded successfully. Location:`);
       console.log('ACESSS TOKEN  ---'+JSON.stringify(accessToken))
-      const xhr = new XMLHttpRequest();
-      const url = `${instanceUrl}/services/apexrest/NEILON/S3Link/v1/creates3files/`
 
-      xhr.open('POST', url, true);
-      xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
-      xhr.setRequestHeader('Content-Type', 'application/json');
-
-      const body = [
-        {
-          "NEILON__Bucket_Name__c": awsBucketName,
-          "NEILON__Amazon_File_Key__c": awsFileKey,
-          "NEILON__Size__c": sfFileSize,
-          "NEILON__Content_Document_Id__c": sfContentDocumentId, 
-          "NEILON__Export_Attachment_Id__c": sfFileId
-        }
-      ];
-
-      xhr.onload = function () {
-        if (xhr.readyState === 4 && xhr.status === 200) {
-          debugger;
-          const response = JSON.parse(xhr.responseText);
-          console.log('Method Success', response);
-        } else {
-          console.log('ERROR:', xhr.status, xhr.statusText);
-        }
-      };
-
-      xhr.onerror = function (e) {
-        console.error('Request failed:', e);
-      };
-
-      xhr.send(JSON.stringify(body));
+      // Create S3-File record in Salesforce org
+      if(uploadResult.$metadata.httpStatusCode === 200){
+        const xhr = new XMLHttpRequest();
+        const url = `${instanceUrl}/services/apexrest/NEILON/S3Link/v1/creates3files/`
+        xhr.open('POST', url, true);// TODO msg 
+        xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+  
+        // Prepare S3-File data
+        const body = [
+          {
+            "NEILON__Bucket_Name__c": awsBucketName,
+            "NEILON__Amazon_File_Key__c": awsFileKey,
+            "NEILON__Size__c": sfFileSize,
+            "NEILON__Content_Document_Id__c": sfContentDocumentId, 
+            "NEILON__Export_Attachment_Id__c": sfFileId
+          }
+        ];
+  
+        xhr.onload = function(){
+          if(xhr.readyState === 4 && xhr.status === 200){
+            const response = JSON.parse(xhr.responseText);
+          } else {
+            // Send failure email
+            console.log('ERROR:', xhr.status, xhr.statusText); // TODO ERROR+xhr.status+xhr.statusText
+          }
+        };
+  
+        xhr.onerror = function(e){
+          // Send failure email
+          console.error('Request failed:', e);// TODO add msg
+        };
+  
+        xhr.send(JSON.stringify(body));
+      }
     } catch (error) {
       console.error('Error fetching Salesforce 124 data:', error);
       res.status(500).send(`Error: ${error || 'An unexpected error occurred.'}`);
