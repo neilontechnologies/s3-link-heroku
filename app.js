@@ -197,25 +197,21 @@ const uploadToS3 = async (buffer, key, awsBucketName, awsBucketRegion, awsAccess
 app.get('/', async (req, res) => {
     try {
       // Replace these values with your own Salesforce Connected App credentials
-      const client_id = '3MVG94Jqh209Cp4Sg3eoGq6oVTXS4yYiy8RI5iwedUxsx0ZoBtZLqGQEJV0Kf8TbgoE2LjBJgR4JkY3Q6P1_u';
-      const client_secret = 'B4BE0F88F30DAB575A0649AB915A43CC21B29CFD1765DFEB78BA539BE0F1E946';
-      const username = 'dev2@neilon.com';
-      const password = 'welcom12!53PcZzDygiBq4vKp5WtSK8mAD';
       const sfFileId = '068GB00000oZ3ADYA0';
-
-      const { accessToken, instanceUrl } = await getToken(client_id, client_secret, username, password);
-      const contentVersionId = '068GB00000oZ3ADYA0'; // Replace with your ContentVersion ID//
-      const salesforceFileContent = await getSalesforceFile(accessToken, instanceUrl, sfFileId);
-      const awsAccessKey = 'AKIA3HJD3T3REEHJPVAU'
-      const awsSecretKey = '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'
-      const awsBucketRegion = 'ap-south-1';
-
+      const awsAccessKey = 'AKIA3HJD3T3REEHJPVAU';
+      const awsSecretKey = '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';
+      const sfClientId = '3MVG94Jqh209Cp4Sg3eoGq6oVTXS4yYiy8RI5iwedUxsx0ZoBtZLqGQEJV0Kf8TbgoE2LjBJgR4JkY3Q6P1_u';
+      const sfClientSecret = 'B4BE0F88F30DAB575A0649AB915A43CC21B29CFD1765DFEB78BA539BE0F1E946';
+      const sfUsername = 'dev2@neilon.com';
+      const sfPassword = 'welcom12!53PcZzDygiBq4vKp5WtSK8mAD';
       const awsBucketName = 'neilon-dev2';
+      const awsBucketRegion = 'ap-south-1';
       const awsFileKey = 'Accounts/Burlington Textiles Corp of America/Appex String.png'; 
-      const name = 'Appex String.png';
       const sfFileSize = 178893;
       const sfContentDocumentId = '06AGB000018by5X2AQ';
-      
+
+      const { accessToken, instanceUrl } = await getToken(sfClientId, sfClientSecret, sfUsername, sfPassword);
+      const salesforceFileContent = await getSalesforceFile(accessToken, instanceUrl, sfFileId);
 
       // Upload the Blob to S3
       const uploadResult = await uploadToS3(salesforceFileContent, awsFileKey, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);
