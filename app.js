@@ -37,59 +37,9 @@ app.get('/uploadFiles', async (req, res) => {
     const sfFileSize = parseInt(req.headers['sf-file-size'], 10)
     const sfContentDocumentId = req.headers['sf-content-document-id']; 
 
+    async (sfFileId, awsAccessKey, awsSecretKey, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFileKey, sfFileSize, sfContentDocumentId);
+
     // Check required parameters
-    if(sfFileSize &&  sfFileId && awsBucketName && awsBucketRegion && awsFileKey){// TODO 
-
-      // TODO Reponse send
-      res.send(`Heroku service to migrate Salesforce File has been started successfully.`);
-
-      // Get access token of salesforce
-      const { accessToken, instanceUrl } = await getToken(sfClientId, sfClientSecret, sfUsername, sfPassword);
-
-      // Get salesforce file information 
-      const salesforceFileContent = await getSalesforceFile(accessToken, instanceUrl, sfFileId);// TODO , 
-
-      // Upload salesforce file into Amazon S3
-      const uploadResult = await uploadToS3(salesforceFileContent, awsFileKey, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);
-
-      // Create S3-File record in Salesforce org
-      if(uploadResult.$metadata.httpStatusCode === 200){
-        const xhr = new XMLHttpRequest();
-        const url = `${instanceUrl}/services/apexrest/NEILON/S3Link/v1/creates3files/`
-        xhr.open('POST', url, true);// TODO msg 
-        xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
-        xhr.setRequestHeader('Content-Type', 'application/json');
-  
-        // Prepare S3-File data
-        const body = [
-          {
-            "NEILON__Bucket_Name__c": awsBucketName,
-            "NEILON__Amazon_File_Key__c": awsFileKey,
-            "NEILON__Size__c": sfFileSize,
-            "NEILON__Content_Document_Id__c": sfContentDocumentId, 
-            "NEILON__Export_Attachment_Id__c": sfFileId
-          }
-        ];
-  
-        xhr.onload = function(){
-          if(xhr.readyState === 4 && xhr.status === 200){
-            const response = JSON.parse(xhr.responseText);
-          } else {
-            // Send failure email
-            console.log('ERROR:', xhr.status, xhr.statusText); // TODO ERROR+xhr.status+xhr.statusText
-          }
-        };
-  
-        xhr.onerror = function(e){
-          // Send failure email
-          console.error('Request failed:', e);// TODO add msg
-        };
-  
-        xhr.send(JSON.stringify(body));
-      }
-    } else {
-      throw new Error(`Incorrect salesforce or AWS data:`);// TODO
-    }
   } catch (error) {
     // Send failure email 
     console.log('---'+error);
@@ -260,6 +210,61 @@ app.get('/', async (req, res) => {
       res.status(500).send(`Error: ${error || 'An unexpected error occurred.'}`);
     }
 });
+
+async (sfFileId, awsAccessKey, awsSecretKey, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFileKey, sfFileSize, sfContentDocumentId) =>{
+  if(sfFileSize &&  sfFileId && awsBucketName && awsBucketRegion && awsFileKey){// TODO 
+
+    // TODO Reponse send
+    res.send(`Heroku service to migrate Salesforce File has been started successfully.`);
+
+    // Get access token of salesforce
+    const { accessToken, instanceUrl } = await getToken(sfClientId, sfClientSecret, sfUsername, sfPassword);
+
+    // Get salesforce file information 
+    const salesforceFileContent = await getSalesforceFile(accessToken, instanceUrl, sfFileId);// TODO , 
+
+    // Upload salesforce file into Amazon S3
+    const uploadResult = await uploadToS3(salesforceFileContent, awsFileKey, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);
+
+    // Create S3-File record in Salesforce org
+    if(uploadResult.$metadata.httpStatusCode === 200){
+      const xhr = new XMLHttpRequest();
+      const url = `${instanceUrl}/services/apexrest/NEILON/S3Link/v1/creates3files/`
+      xhr.open('POST', url, true);// TODO msg 
+      xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+
+      // Prepare S3-File data
+      const body = [
+        {
+          "NEILON__Bucket_Name__c": awsBucketName,
+          "NEILON__Amazon_File_Key__c": awsFileKey,
+          "NEILON__Size__c": sfFileSize,
+          "NEILON__Content_Document_Id__c": sfContentDocumentId, 
+          "NEILON__Export_Attachment_Id__c": sfFileId
+        }
+      ];
+
+      xhr.onload = function(){
+        if(xhr.readyState === 4 && xhr.status === 200){
+          const response = JSON.parse(xhr.responseText);
+        } else {
+          // Send failure email
+          console.log('ERROR:', xhr.status, xhr.statusText); // TODO ERROR+xhr.status+xhr.statusText
+        }
+      };
+
+      xhr.onerror = function(e){
+        // Send failure email
+        console.error('Request failed:', e);// TODO add msg
+      };
+
+      xhr.send(JSON.stringify(body));
+    }
+  } else {
+    throw new Error(`Incorrect salesforce or AWS data:`);// TODO
+  }
+}
 
 const port = process.env.PORT || 3008;
 app.listen(port, () => {
