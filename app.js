@@ -37,6 +37,8 @@ app.get('/uploadFiles', async (req, res) => {
     const sfFileSize = parseInt(req.headers['sf-file-size'], 10)
     const sfContentDocumentId = req.headers['sf-content-document-id']; 
 
+    // TODO Reponse send
+    res.send(`Heroku service to migrate Salesforce File has been started successfully.`);
     const reponse = generateResponse (sfFileId, awsAccessKey, awsSecretKey, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFileKey, sfFileSize, sfContentDocumentId);
 
     // Check required parameters
@@ -50,11 +52,12 @@ app.get('/uploadFiles', async (req, res) => {
 const generateResponse = async (sfFileId, awsAccessKey, awsSecretKey, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFileKey, sfFileSize, sfContentDocumentId) =>{
   if(sfFileSize &&  sfFileId && awsBucketName && awsBucketRegion && awsFileKey){// TODO 
 
-    // TODO Reponse send
-    res.send(`Heroku service to migrate Salesforce File has been started successfully.`);
-
+    console.log('Method');
     // Get access token of salesforce
     const { accessToken, instanceUrl } = await getToken(sfClientId, sfClientSecret, sfUsername, sfPassword);
+
+    console.log(accessToken);
+    console.log(instanceUrl);
 
     // Get salesforce file information 
     const salesforceFileContent = await getSalesforceFile(accessToken, instanceUrl, sfFileId);// TODO , 
@@ -216,7 +219,7 @@ app.get('/', async (req, res) => {
       const sfContentDocumentId = '06AGB000018by5X2AQ';
 
 
-      const reponse = generateResponse (sfFileId, awsAccessKey, awsSecretKey, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFileKey, sfFileSize, sfContentDocumentId);
+      const reponse = await generateResponse (sfFileId, awsAccessKey, awsSecretKey, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFileKey, sfFileSize, sfContentDocumentId);
 
 
       /*const { accessToken, instanceUrl } = await getToken(sfClientId, sfClientSecret, sfUsername, sfPassword);
