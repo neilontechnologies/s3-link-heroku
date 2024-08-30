@@ -17,11 +17,11 @@ app.use((req, res, next) => {
   if (providedAccessKey === apiKey) {
     next(); 
   } else {
-    res.status(403).send('Forbidden: Invalid Access Key');
+    res.status(403).send('Forbidden: Invalid Heroku API Key');
   }
 });
 
-// This method is used to upload salesforce files into AWS S3 dynamatically from salesforce call
+// This service is used to upload salesforce files and attachments into Amazon S3
 app.get('/uploadFiles', async (req, res) => {
   try {
     const sfFileId = req.headers['sf-file-id']; 
@@ -37,27 +37,29 @@ app.get('/uploadFiles', async (req, res) => {
     const sfFileSize = parseInt(req.headers['sf-file-size'], 10)
     const sfContentDocumentId = req.headers['sf-content-document-id']; 
 
-    if(sfClientId && sfClientSecret && sfUsername && sfPassword && sfFileSize &&  sfFileId && awsBucketName && awsBucketRegion && awsFileKey ){
+    // Check required parameters
+    if(sfClientId && sfClientSecret && sfUsername && sfPassword && sfFileSize &&  sfFileId && awsBucketName && awsBucketRegion && awsFileKey){// TODO 
 
+      // TODO Reponse send
       // Get access token of salesforce
       const { accessToken, instanceUrl } = await getToken(sfClientId, sfClientSecret, sfUsername, sfPassword);
 
       // Get salesforce file information 
-      const contentVersionData = await getContentVersion(accessToken, instanceUrl, sfFileId);
+      const contentVersionData = await getContentVersion(accessToken, instanceUrl, sfFileId);// TODO getSalesforceFile, salesforceFileContent
 
-      // Upload salesforce file into AWS S3
+      // Upload salesforce file into Amazon S3
       const uploadResult = await uploadToS3(contentVersionData, awsFileKey, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);
 
-      // Create S3 file record in salesforce org
-      if (uploadResult.$metadata.httpStatusCode === 200) {
+      // Create S3-File record in Salesforce org
+      if(uploadResult.$metadata.httpStatusCode === 200){
         const xhr = new XMLHttpRequest();
         const url = `${instanceUrl}/services/apexrest/NEILON/S3Link/v1/creates3files/`
         xhr.open('POST', url, true);
-        res.send(`File uploaded successfully.`);
+        res.send(`Migration to upload file into Amazon S3 has been started.`);// TODO msg 
         xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
         xhr.setRequestHeader('Content-Type', 'application/json');
   
-        // Prepare S3 file data for File object
+        // Prepare S3-File data
         const body = [
           {
             "NEILON__Bucket_Name__c": awsBucketName,
@@ -68,58 +70,58 @@ app.get('/uploadFiles', async (req, res) => {
           }
         ];
   
-        xhr.onload = function () {
-          if (xhr.readyState === 4 && xhr.status === 200) {
-            debugger;
+        xhr.onload = function(){
+          if(xhr.readyState === 4 && xhr.status === 200){
             const response = JSON.parse(xhr.responseText);
           } else {
-            console.log('ERROR:', xhr.status, xhr.statusText);
+            // Send failure email
+            console.log('ERROR:', xhr.status, xhr.statusText); // TODO ERROR+xhr.status+xhr.statusText
           }
         };
   
-        xhr.onerror = function (e) {
-          console.error('Request failed:', e);
+        xhr.onerror = function(e){
+          // Send failure email
+          console.error('Request failed:', e);// TODO add msg
         };
   
         xhr.send(JSON.stringify(body));
       }
     } else {
-      throw new Error(`Incorrect salesforce or AWS data:`);
+      throw new Error(`Incorrect salesforce or AWS data:`);// TODO
     }
   } catch (error) {
-    console.error('Error fetching Salesforce 124 data:', error);
-    res.status(500).send(`Error: ${error || 'An unexpected error occurred.'}`);
+    // Send failure email 
+    res.status(500).send(`Error: ${error || 'An unexpected error occurred.'}`);// TODO CONSOLE loG
   }
 });
 
 
-// This method to get access token of Salesforce org
+// This method is used to get access token of Salesforce org and instance url of the org
 const getToken = (sfClientId, sfClientSecret, sfUsername, sfPassword) => {
     return new Promise((resolve, reject) => {
       const postData = `grant_type=password&client_id=${sfClientId}&client_secret=${sfClientSecret}&username=${sfUsername}&password=${sfPassword}`;
       const xhr = new XMLHttpRequest();
       const url = 'https://login.salesforce.com/services/oauth2/token';
   
-      xhr.open('POST', url, true);
+      xhr.open('POST', url, true);// TODO url
       xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
   
-      xhr.onreadystatechange = function () {
-        if (xhr.readyState === 4) {
-          if (xhr.status === 200) {
-            debugger
+      xhr.onreadystatechange = function(){// TODO onload
+        if(xhr.readyState === 4){
+          if(xhr.status === 200){
             const response = JSON.parse(xhr.responseText);
             resolve({
               accessToken: response.access_token,
               instanceUrl: response.instance_url
             });
           } else {
-            reject(new Error('Failed to get access token'));
+            reject(new Error('Failed to get access token'));// Todo msg
           }
         }
       };
   
-      xhr.onerror = function (e) {
-        reject(new Error(`Problem with request: ${e.message}`));
+      xhr.onerror = function(e){
+        reject(new Error(`Problem with request: ${e.message}`));// Todo msg
       };
   
       xhr.send(postData);
@@ -127,11 +129,11 @@ const getToken = (sfClientId, sfClientSecret, sfUsername, sfPassword) => {
 };
 
 
-// This method is used to get salesforce file information with the help of access token of that org, URL, salesforce file id  
+// This method is used to get salesforce file information with the help of access token of that org, URL, provided salesforce file id  
 const getContentVersion = async (accessToken, instanceUrl, sfFileId) => {
   
   var url;
-  // Preprae url of attachments or content document
+  // Prepare url of attachments or content document
   if(sfFileId.startsWith('00P')){
     url = `${instanceUrl}/services/data/v58.0/sobjects/Attachment/${sfFileId}/Body`;
   } else {
@@ -146,21 +148,22 @@ const getContentVersion = async (accessToken, instanceUrl, sfFileId) => {
       }
     });
 
-    //Returns the response status code
-    if (!response.ok) {
-      throw new Error(`Failed to fetch ContentVersion data: ${response.statusText}`);
+    // Returns the response status code
+    if(!response.ok){
+      throw new Error(`Failed to fetch ContentVersion data: ${response.statusText}`); // TODO msg
     }
+
     const blob = await response.blob();
     const arrayBuffer = await blob.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     return buffer;
-  } catch (error) {
-    console.error('Error fetching ContentVersion data:', error);
+  } catch(error){
+    console.error('Error fetching ContentVersion data:', error); // TODO msg
     throw error;
   }
 };
 
-// This method is used to upload salesforce file into AWS S3 with the help of provided AWS data
+// This method is used to upload Salesforce file into Amazon S3 with the help of provided AWS data
 const uploadToS3 = async (buffer, key, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey) => {
   try {
 
@@ -179,10 +182,12 @@ const uploadToS3 = async (buffer, key, awsBucketName, awsBucketRegion, awsAccess
           secretAccessKey: awsSecretKey
       }
     });
+
+    // Uploading file in Amazon S3
     const response = await s3Client.send(command);
     return response;
   } catch (error) {
-    console.error('Error uploading to S3:', error.message);
+    console.error('Error uploading to S3:', error.message); // TODO
     throw error.message; 
   }
 };
@@ -215,7 +220,7 @@ app.get('/', async (req, res) => {
       const xhr = new XMLHttpRequest();
       const url = 'https://dev2-neilon-dev-ed.develop.my.salesforce.com/services/apexrest/NEILON/S3Link/v1/creates3files/';
 
-      /*xhr.open('POST', url, true);
+      xhr.open('POST', url, true);
       xhr.setRequestHeader('Authorization', 'Bearer 00DGB000002FWLe!ARcAQJCmTnHimT26iLsjf7nyWISRvsVkg1ZuRFVq8SwIwsu3kKeqqcMT3D09jnQh_wGC_bS0FPRcScNV5FYSjULmZe1pPn2A');
       xhr.setRequestHeader('Content-Type', 'application/json');
 
@@ -243,7 +248,7 @@ app.get('/', async (req, res) => {
         console.error('Request failed:', e);
       };
 
-      xhr.send(JSON.stringify(body));*/
+      xhr.send(JSON.stringify(body));
     } catch (error) {
       console.error('Error fetching Salesforce 124 data:', error);
       res.status(500).send(`Error: ${error || 'An unexpected error occurred.'}`);
