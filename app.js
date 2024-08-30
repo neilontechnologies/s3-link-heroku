@@ -43,8 +43,8 @@ app.get('/uploadFiles', async (req, res) => {
 
   } catch (error) {
     // Send failure email 
-    console.log('---'+error);
-    res.status(500).send(`Error: ${error || 'An unexpected error occurred.'}`);// TODO CONSOLE loG
+    console.log(error);
+    // res.status(500).send(`Error: ${error || 'An unexpected error occurred.'}`);// TODO CONSOLE loG
   }
 });
 
@@ -87,19 +87,19 @@ const generateResponse = async (sfFileId, awsAccessKey, awsSecretKey, sfClientId
           const response = JSON.parse(xhr.responseText);
         } else {
           // Send failure email
-          console.log('ERROR:'+xhr.status+xhr.statusText); // TODO ERROR+xhr.status+xhr.statusText
+          console.log('ERROR:'+xhr.status+xhr.statusText);
         }
       };
 
       xhr.onerror = function(e){
         // Send failure email
-        console.error('Your request to create S3-Files in Salesforce failed. Error: ', e);// TODO add msg
+        console.error('Your request to create S3-Files in Salesforce failed. Error: ', e);
       };
 
       xhr.send(JSON.stringify(body));
     }
   } else {
-    throw new Error(`Salesforce File Id, Salesforce File Size, AWS Bucket Name, AWS Bucket Region or AWS File Path is missing.`);// TODO
+    throw new Error(`Salesforce File Id, Salesforce File Size, AWS Bucket Name, AWS Bucket Region or AWS File Path is missing.`);
   }
 }
 
@@ -109,7 +109,7 @@ const getToken = (sfClientId, sfClientSecret, sfUsername, sfPassword) => {
       const postData = `grant_type=password&client_id=${sfClientId}&client_secret=${sfClientSecret}&username=${sfUsername}&password=${sfPassword}`;
       const xhr = new XMLHttpRequest();
   
-      xhr.open('POST', 'https://login.salesforce.com/services/oauth2/token', true);// TODO url
+      xhr.open('POST', 'https://login.salesforce.com/services/oauth2/token', true);
       xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
   
       xhr.onload = function(){// TODO onload
@@ -134,7 +134,6 @@ const getToken = (sfClientId, sfClientSecret, sfUsername, sfPassword) => {
     });
 };
 
-
 // This method is used to get salesforce file information with the help of access token of that org, URL, provided salesforce file id  
 const getSalesforceFile = async (accessToken, instanceUrl, sfFileId) => {
   
@@ -156,7 +155,7 @@ const getSalesforceFile = async (accessToken, instanceUrl, sfFileId) => {
 
     // Returns the response status code
     if(!response.ok){
-      throw new Error(`We are not able to fetch the Salesforce File Content. Error: ${response.statusText}`); // TODO msg Error: Failed to fetch ContentVersion data: Not Found
+      throw new Error(`We are not able to fetch the Salesforce File Content. Error: ${response.statusText}`);
     }
 
     const blob = await response.blob();
@@ -164,7 +163,7 @@ const getSalesforceFile = async (accessToken, instanceUrl, sfFileId) => {
     const buffer = Buffer.from(arrayBuffer);
     return buffer;
   } catch(error){
-    console.error('We are not able to fetch the Salesforce File Content. Error: ', error); // TODO msg Error fetching ContentVersion data: Error: Failed to fetch ContentVersion data: Not Found
+    console.error('We are not able to fetch the Salesforce File Content. Error: ', error);
     throw error;
   }
 };
@@ -193,7 +192,7 @@ const uploadToS3 = async (buffer, key, awsBucketName, awsBucketRegion, awsAccess
     const response = await s3Client.send(command);
     return response;
   } catch (error) {
-    console.error('Your request to upload file in Amazon S3 has failed. Error: ', error.message); // TODO
+    console.error('Your request to upload file in Amazon S3 has failed. Error: ', error.message);
     throw error.message; 
   }
 };
