@@ -103,15 +103,13 @@ const generateResponse = async (sfFileId, awsAccessKey, awsSecretKey, sfClientId
   }
 }
 
-
 // This method is used to get access token of Salesforce org and instance url of the org
 const getToken = (sfClientId, sfClientSecret, sfUsername, sfPassword) => {
     return new Promise((resolve, reject) => {
       const postData = `grant_type=password&client_id=${sfClientId}&client_secret=${sfClientSecret}&username=${sfUsername}&password=${sfPassword}`;
       const xhr = new XMLHttpRequest();
-      const url = 'https://login.salesforce.com/services/oauth2/token';
   
-      xhr.open('POST', url, true);// TODO url
+      xhr.open('POST', 'https://login.salesforce.com/services/oauth2/token', true);// TODO url
       xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
   
       xhr.onload = function(){// TODO onload
@@ -205,8 +203,8 @@ const uploadToS3 = async (buffer, key, awsBucketName, awsBucketRegion, awsAccess
 app.get('/', async (req, res) => {
     try {
       // Replace these values with your own Salesforce Connected App credentials
-      const sfFileId = '068GB00000oZ3ADYA0'; //
-      const awsAccessKey = 'AKIA3HJD3T3REEHJPVAU';//
+      const sfFileId = '068GB00000oZ3ADYA0'; 
+      const awsAccessKey = 'AKIA3HJD3T3REEHJPVAU';
       const awsSecretKey = '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';
       const sfClientId = '3MVG94Jqh209Cp4Sg3eoGq6oVTXS4yYiy8RI5iwedUxsx0ZoBtZLqGQEJV0Kf8TbgoE2LjBJgR4JkY3Q6P1_u';
       const sfClientSecret = 'B4BE0F88F30DAB575A0649AB915A43CC21B29CFD1765DFEB78BA539BE0F1E946';
