@@ -37,7 +37,7 @@ app.get('/uploadFiles', async (req, res) => {
     const sfFileSize = parseInt(req.headers['sf-file-size'], 10)
     const sfContentDocumentId = req.headers['sf-content-document-id']; 
 
-    async (sfFileId, awsAccessKey, awsSecretKey, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFileKey, sfFileSize, sfContentDocumentId);
+    const reponse = async (sfFileId, awsAccessKey, awsSecretKey, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFileKey, sfFileSize, sfContentDocumentId);
 
     // Check required parameters
   } catch (error) {
@@ -211,7 +211,7 @@ app.get('/', async (req, res) => {
     }
 });
 
-async (sfFileId, awsAccessKey, awsSecretKey, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFileKey, sfFileSize, sfContentDocumentId) =>{
+const reponse = async (sfFileId, awsAccessKey, awsSecretKey, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFileKey, sfFileSize, sfContentDocumentId) =>{
   if(sfFileSize &&  sfFileId && awsBucketName && awsBucketRegion && awsFileKey){// TODO 
 
     // TODO Reponse send
