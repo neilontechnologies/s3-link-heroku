@@ -38,24 +38,25 @@ app.get('/uploadFiles', async (req, res) => {
     const sfContentDocumentId = req.headers['sf-content-document-id']; 
 
     // Check required parameters
-    if(sfClientId && sfClientSecret && sfUsername && sfPassword && sfFileSize &&  sfFileId && awsBucketName && awsBucketRegion && awsFileKey){// TODO 
+    if(sfFileSize &&  sfFileId && awsBucketName && awsBucketRegion && awsFileKey){// TODO 
 
       // TODO Reponse send
+      res.send(`Heroku service to migrate Salesforce File has been started successfully.`);
+
       // Get access token of salesforce
       const { accessToken, instanceUrl } = await getToken(sfClientId, sfClientSecret, sfUsername, sfPassword);
 
       // Get salesforce file information 
-      const contentVersionData = await getContentVersion(accessToken, instanceUrl, sfFileId);// TODO getSalesforceFile, salesforceFileContent
+      const salesforceFileContent = await getSalesforceFile(accessToken, instanceUrl, sfFileId);// TODO , 
 
       // Upload salesforce file into Amazon S3
-      const uploadResult = await uploadToS3(contentVersionData, awsFileKey, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);
+      const uploadResult = await uploadToS3(salesforceFileContent, awsFileKey, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);
 
       // Create S3-File record in Salesforce org
       if(uploadResult.$metadata.httpStatusCode === 200){
         const xhr = new XMLHttpRequest();
         const url = `${instanceUrl}/services/apexrest/NEILON/S3Link/v1/creates3files/`
-        xhr.open('POST', url, true);
-        res.send(`Migration to upload file into Amazon S3 has been started.`);// TODO msg 
+        xhr.open('POST', url, true);// TODO msg 
         xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
         xhr.setRequestHeader('Content-Type', 'application/json');
   
@@ -131,7 +132,7 @@ const getToken = (sfClientId, sfClientSecret, sfUsername, sfPassword) => {
 
 
 // This method is used to get salesforce file information with the help of access token of that org, URL, provided salesforce file id  
-const getContentVersion = async (accessToken, instanceUrl, sfFileId) => {
+const getSalesforceFile = async (accessToken, instanceUrl, sfFileId) => {
   
   var url;
   // Prepare url of attachments or content document
@@ -203,7 +204,7 @@ app.get('/', async (req, res) => {
 
       const { accessToken, instanceUrl } = await getToken(client_id, client_secret, username, password);
       const contentVersionId = '068GB00000oZ3ADYA0'; // Replace with your ContentVersion ID//
-      const contentVersionData = await getContentVersion(accessToken, instanceUrl, contentVersionId);
+      const salesforceFileContent = await getSalesforceFile(accessToken, instanceUrl, contentVersionId);
       const awsAccessKey = 'AKIA3HJD3T3REEHJPVAU'
       const awsSecretKey = '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'
       const awsBucketRegion = 'ap-south-1';
@@ -213,7 +214,7 @@ app.get('/', async (req, res) => {
       const name = 'Appex String.png'
 
       // Upload the Blob to S3
-      const uploadResult = await uploadToS3(contentVersionData, key, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);
+      const uploadResult = await uploadToS3(salesforceFileContent, key, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);
       console.log(JSON.stringify(uploadResult));
       
       res.send(`File uploaded successfully. Location:`);
