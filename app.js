@@ -232,7 +232,6 @@ app.get('/', async (req, res) => {
           "NEILON__Bucket_Name__c": "neilon-dev2",
           "NEILON__Amazon_File_Key__c": "Accounts/Burlington Textiles Corp of America/Appex String.png",
           "NEILON__Size__c": 178893,
-          "NEILON__Account__c": "001GB00003B1jEgYAJ"
         }
       ];
 
