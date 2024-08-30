@@ -99,7 +99,7 @@ const generateResponse = async (sfFileId, awsAccessKey, awsSecretKey, sfClientId
       xhr.send(JSON.stringify(body));
     }
   } else {
-    throw new Error(`Incorrect salesforce or AWS data:`);// TODO
+    throw new Error(`Salesforce File Id, Salesforce File Size, AWS Bucket Name, AWS Bucket Region or AWS File Path is missing.`);// TODO
   }
 }
 
@@ -193,7 +193,7 @@ const uploadToS3 = async (buffer, key, awsBucketName, awsBucketRegion, awsAccess
     const response = await s3Client.send(command);
     return response;
   } catch (error) {
-    console.error('Error uploading to S3:', error.message); // TODO
+    console.error('Your request to upload file in Amazon S3 has failed. Error: ', error.message); // TODO
     throw error.message; 
   }
 };
