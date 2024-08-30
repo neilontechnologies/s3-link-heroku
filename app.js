@@ -201,7 +201,7 @@ app.get('/', async (req, res) => {
       const password = 'welcom12!53PcZzDygiBq4vKp5WtSK8mAD';
 
       const { accessToken, instanceUrl } = await getToken(client_id, client_secret, username, password);
-      const contentVersionId = '00PGB00002rkWxi2AE'; // Replace with your ContentVersion ID//
+      const contentVersionId = '06AGB000018by5X2AQ'; // Replace with your ContentVersion ID//
       const contentVersionData = await getContentVersion(accessToken, instanceUrl, contentVersionId);
       const awsAccessKey = 'AKIA3HJD3T3REEHJPVAU'
       const awsSecretKey = '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'
