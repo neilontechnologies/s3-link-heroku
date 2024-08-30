@@ -220,10 +220,10 @@ app.get('/', async (req, res) => {
       res.send(`File uploaded successfully. Location:`);
       console.log('ACESSS TOKEN  ---'+JSON.stringify(accessToken))
       const xhr = new XMLHttpRequest();
-      const url = 'https://dev2-neilon-dev-ed.develop.my.salesforce.com/services/apexrest/NEILON/S3Link/v1/creates3files/';
+      const url = `${instanceUrl}/services/apexrest/NEILON/S3Link/v1/creates3files/`
 
       xhr.open('POST', url, true);
-      xhr.setRequestHeader('Authorization', 'Bearer 00DGB000002FWLe!ARcAQG_9N6bCXSkY40ic4EdfvXpkzQxLxUk_6s86jLG4lf.tgrpSKh2txX_ZA78plsVdunry43029AWN6B.t8TtaANCEthph');
+      xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
       xhr.setRequestHeader('Content-Type', 'application/json');
 
       const body = [
