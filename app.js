@@ -87,13 +87,13 @@ const generateResponse = async (sfFileId, awsAccessKey, awsSecretKey, sfClientId
           const response = JSON.parse(xhr.responseText);
         } else {
           // Send failure email
-          console.log('ERROR:'+JSON.stringify(xhr.status)+JSON.stringify(xhr.statusText)); // TODO ERROR+xhr.status+xhr.statusText
+          console.log('ERROR:'+xhr.status+xhr.statusText); // TODO ERROR+xhr.status+xhr.statusText
         }
       };
 
       xhr.onerror = function(e){
         // Send failure email
-        console.error('Request failed:', e);// TODO add msg
+        console.error('Your request to create S3-Files in Salesforce failed. Error: ', e);// TODO add msg
       };
 
       xhr.send(JSON.stringify(body));
@@ -121,13 +121,13 @@ const getToken = (sfClientId, sfClientSecret, sfUsername, sfPassword) => {
               instanceUrl: response.instance_url
             });
           } else {
-            reject(new Error('Failed to get access token'));// Todo msg
+            reject(new Error('We are not able to get the Salesforce Authentication Token. This happens if the Salesforce Client Id, Client Secret, User Name, Password or Security Token is invalid.'));// Todo msg
           }
         }
       };
   
       xhr.onerror = function(e){
-        reject(new Error(`Problem with request: ${e.message}`));// Todo msg
+        reject(new Error(`Your request to get Salesforce Authentication Token failed. This happens if the Salesforce Client Id, Client Secret, User Name, Password or Security Token is invalid. : ${e.message}`));// Todo msg
       };
   
       xhr.send(postData);
@@ -156,8 +156,7 @@ const getSalesforceFile = async (accessToken, instanceUrl, sfFileId) => {
 
     // Returns the response status code
     if(!response.ok){
-      console.log('RESPONSE OF CONTENT VDERSIOn');
-      throw new Error(`Failed to fetch ContentVersion data: ${response.statusText}`); // TODO msg Error: Failed to fetch ContentVersion data: Not Found
+      throw new Error(`We are not able to fetch the Salesforce File Content. Error: ${response.statusText}`); // TODO msg Error: Failed to fetch ContentVersion data: Not Found
     }
 
     const blob = await response.blob();
@@ -165,7 +164,7 @@ const getSalesforceFile = async (accessToken, instanceUrl, sfFileId) => {
     const buffer = Buffer.from(arrayBuffer);
     return buffer;
   } catch(error){
-    console.error('Error fetching ContentVersion data:', error); // TODO msg Error fetching ContentVersion data: Error: Failed to fetch ContentVersion data: Not Found
+    console.error('We are not able to fetch the Salesforce File Content. Error: ', error); // TODO msg Error fetching ContentVersion data: Error: Failed to fetch ContentVersion data: Not Found
     throw error;
   }
 };
@@ -221,7 +220,6 @@ app.get('/', async (req, res) => {
       const reponse = await generateResponse (sfFileId, awsAccessKey, awsSecretKey, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFileKey, sfFileSize, sfContentDocumentId);
 
     } catch (error) {
-      console.log('_----'+error);
       console.error(error);
     }
 });
