@@ -91,6 +91,7 @@ app.get('/uploadFiles', async (req, res) => {
     }
   } catch (error) {
     // Send failure email 
+    console.log('---'+error);
     res.status(500).send(`Error: ${error || 'An unexpected error occurred.'}`);// TODO CONSOLE loG
   }
 });
@@ -201,7 +202,7 @@ app.get('/', async (req, res) => {
       const password = 'welcom12!53PcZzDygiBq4vKp5WtSK8mAD';
 
       const { accessToken, instanceUrl } = await getToken(client_id, client_secret, username, password);
-      const contentVersionId = '06AGB000018by5X2AQ'; // Replace with your ContentVersion ID//
+      const contentVersionId = '068GB00000oZ3ADYA0'; // Replace with your ContentVersion ID//
       const contentVersionData = await getContentVersion(accessToken, instanceUrl, contentVersionId);
       const awsAccessKey = 'AKIA3HJD3T3REEHJPVAU'
       const awsSecretKey = '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'
@@ -221,7 +222,7 @@ app.get('/', async (req, res) => {
       const url = 'https://dev2-neilon-dev-ed.develop.my.salesforce.com/services/apexrest/NEILON/S3Link/v1/creates3files/';
 
       xhr.open('POST', url, true);
-      xhr.setRequestHeader('Authorization', 'Bearer 00DGB000002FWLe!ARcAQJCmTnHimT26iLsjf7nyWISRvsVkg1ZuRFVq8SwIwsu3kKeqqcMT3D09jnQh_wGC_bS0FPRcScNV5FYSjULmZe1pPn2A');
+      xhr.setRequestHeader('Authorization', 'Bearer 00DGB000002FWLe!ARcAQG_9N6bCXSkY40ic4EdfvXpkzQxLxUk_6s86jLG4lf.tgrpSKh2txX_ZA78plsVdunry43029AWN6B.t8TtaANCEthph');
       xhr.setRequestHeader('Content-Type', 'application/json');
 
       const body = [
