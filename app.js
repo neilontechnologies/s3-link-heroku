@@ -201,20 +201,24 @@ app.get('/', async (req, res) => {
       const client_secret = 'B4BE0F88F30DAB575A0649AB915A43CC21B29CFD1765DFEB78BA539BE0F1E946';
       const username = 'dev2@neilon.com';
       const password = 'welcom12!53PcZzDygiBq4vKp5WtSK8mAD';
+      const sfFileId = '068GB00000oZ3ADYA0';
 
       const { accessToken, instanceUrl } = await getToken(client_id, client_secret, username, password);
       const contentVersionId = '068GB00000oZ3ADYA0'; // Replace with your ContentVersion ID//
-      const salesforceFileContent = await getSalesforceFile(accessToken, instanceUrl, contentVersionId);
+      const salesforceFileContent = await getSalesforceFile(accessToken, instanceUrl, sfFileId);
       const awsAccessKey = 'AKIA3HJD3T3REEHJPVAU'
       const awsSecretKey = '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'
       const awsBucketRegion = 'ap-south-1';
 
       const awsBucketName = 'neilon-dev2';
-      const key = 'Account/VMware LLC/Appex String.png'; 
-      const name = 'Appex String.png'
+      const awsFileKey = 'Accounts/Burlington Textiles Corp of America/Appex String.png'; 
+      const name = 'Appex String.png';
+      const sfFileSize = 178893;
+      const sfContentDocumentId = '06AGB000018by5X2AQ';
+      
 
       // Upload the Blob to S3
-      const uploadResult = await uploadToS3(salesforceFileContent, key, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);
+      const uploadResult = await uploadToS3(salesforceFileContent, awsFileKey, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);
       console.log(JSON.stringify(uploadResult));
       
       res.send(`File uploaded successfully. Location:`);
@@ -228,10 +232,11 @@ app.get('/', async (req, res) => {
 
       const body = [
         {
-          "Name": "Appex String",
-          "NEILON__Bucket_Name__c": "neilon-dev2",
-          "NEILON__Amazon_File_Key__c": "Accounts/Burlington Textiles Corp of America/Appex String.png",
-          "NEILON__Size__c": 178893,
+          "NEILON__Bucket_Name__c": awsBucketName,
+          "NEILON__Amazon_File_Key__c": awsFileKey,
+          "NEILON__Size__c": sfFileSize,
+          "NEILON__Content_Document_Id__c": sfContentDocumentId, 
+          "NEILON__Export_Attachment_Id__c": sfFileId
         }
       ];
 
