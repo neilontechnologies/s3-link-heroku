@@ -37,14 +37,13 @@ app.get('/uploadFiles', async (req, res) => {
     const sfFileSize = parseInt(req.headers['sf-file-size'], 10)
     const sfContentDocumentId = req.headers['sf-content-document-id']; 
 
-    // TODO Reponse send
     res.send(`Heroku service to migrate Salesforce File has been started successfully.`);
     const reponse = generateResponse (sfFileId, awsAccessKey, awsSecretKey, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFileKey, sfFileSize, sfContentDocumentId);
 
   } catch (error) {
     // Send failure email 
     console.log(error);
-    // res.status(500).send(`Error: ${error || 'An unexpected error occurred.'}`);// TODO CONSOLE loG
+    // res.status(500).send(`Error: ${error || 'An unexpected error occurred.'}`);
   }
 });
 
@@ -67,7 +66,7 @@ const generateResponse = async (sfFileId, awsAccessKey, awsSecretKey, sfClientId
     if(uploadResult.$metadata.httpStatusCode === 200){
       const xhr = new XMLHttpRequest();
       const url = `${instanceUrl}/services/apexrest/NEILON/S3Link/v1/creates3files/`
-      xhr.open('POST', url, true);// TODO msg 
+      xhr.open('POST', url, true);
       xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
       xhr.setRequestHeader('Content-Type', 'application/json');
 
@@ -112,7 +111,7 @@ const getToken = (sfClientId, sfClientSecret, sfUsername, sfPassword) => {
       xhr.open('POST', 'https://login.salesforce.com/services/oauth2/token', true);
       xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
   
-      xhr.onload = function(){// TODO onload
+      xhr.onload = function(){
         if(xhr.readyState === 4){
           if(xhr.status === 200){
             const response = JSON.parse(xhr.responseText);
@@ -121,13 +120,13 @@ const getToken = (sfClientId, sfClientSecret, sfUsername, sfPassword) => {
               instanceUrl: response.instance_url
             });
           } else {
-            reject(new Error('We are not able to get the Salesforce Authentication Token. This happens if the Salesforce Client Id, Client Secret, User Name, Password or Security Token is invalid.'));// Todo msg
+            reject(new Error('We are not able to get the Salesforce Authentication Token. This happens if the Salesforce Client Id, Client Secret, User Name, Password or Security Token is invalid.'));
           }
         }
       };
   
       xhr.onerror = function(e){
-        reject(new Error(`Your request to get Salesforce Authentication Token failed. This happens if the Salesforce Client Id, Client Secret, User Name, Password or Security Token is invalid. : ${e.message}`));// Todo msg
+        reject(new Error(`Your request to get Salesforce Authentication Token failed. This happens if the Salesforce Client Id, Client Secret, User Name, Password or Security Token is invalid. : ${e.message}`));
       };
   
       xhr.send(postData);
@@ -214,7 +213,6 @@ app.get('/', async (req, res) => {
       const sfFileSize = 178893;
       const sfContentDocumentId = '06AGB000018by5X2AQ';
 
-      // TODO Reponse send
       res.send(`Heroku service to migrate Salesforce File has been started successfully.`);
       const reponse = await generateResponse (sfFileId, awsAccessKey, awsSecretKey, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFileKey, sfFileSize, sfContentDocumentId);
 
