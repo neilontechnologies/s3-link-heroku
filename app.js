@@ -37,7 +37,7 @@ app.get('/uploadsalesforcefile', async (req, res) => {
     const sfFileSize = parseInt(req.headers['sf-file-size'], 10)
     const sfContentDocumentId = req.headers['sf-content-document-id']; 
 
-    res.send(`Heroku service to migrate Salesforce File has been started successfully.`);
+    res.send(`Heroku service to migrate Salesforce File has been started successfully. `);
     const reponse = generateResponse (sfFileId, awsAccessKey, awsSecretKey, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFileKey, sfFileSize, sfContentDocumentId);
 
   } catch (error) {
@@ -203,8 +203,8 @@ app.get('/', async (req, res) => {
       const sfFileId = '068GB00000oZ3ADYA0'; 
       const awsAccessKey = 'AKIA3HJD3T3REEHJPVAU';
       const awsSecretKey = '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';
-      const sfClientId = '3MVG94Jqh209Cp4Sg3eoGq6oVTXS4yYiy8RI5iwedUxsx0ZoBtZLqGQEJV0Kf8TbgoE2LjBJgR4JkY3Q6P1_u';
-      const sfClientSecret = 'B4BE0F88F30DAB575A0649AB915A43CC21B29CFD1765DFEB78BA539BE0F1E946';
+      const sfClientId = '3MVG94Jqh209Cp4Sg3eoGq6oVTedfg_fgyjYgP_EZSZ2S5FbZF83M9O5hpQIcPaxUM.QfAvRMFcqsloah6N64';
+      const sfClientSecret = '31A129DE199480F96179017876FE4A92F8907309C2F556CAE530C2CA27966950';
       const sfUsername = 'dev2@neilon.com';
       const sfPassword = 'welcom12!53PcZzDygiBq4vKp5WtSK8mAD';
       const awsBucketName = 'neilon-dev2';
