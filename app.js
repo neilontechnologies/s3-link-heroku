@@ -22,7 +22,7 @@ app.use((req, res, next) => {
 });
 
 // This service is used to upload salesforce files and attachments into Amazon S3
-app.get('/uploadFiles', async (req, res) => {
+app.get('/uploadsalesforcefile', async (req, res) => {
   try {
     const sfFileId = req.headers['sf-file-id']; 
     const awsAccessKey = req.headers['aws-access-key'];
