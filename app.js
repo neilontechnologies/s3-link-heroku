@@ -32,16 +32,16 @@ app.get('/uploadsalesforcefile', async (req, res) => {
     const sfUsername = req.headers['sf-username'];
     const sfPassword = req.headers['sf-password'];
     const awsBucketName = req.headers['aws-bucket-name'];
-    const awsBucketRegion = req.headers['aws-bucket-region'];// awsFolderKey, awsFileTitle
+    const awsBucketRegion = req.headers['aws-bucket-region'];
     const sfFileSize = parseInt(req.headers['sf-file-size'], 10)
-    const sfContentDocumentId = req.headers['sf-content-document-id']; // 
+    const sfContentDocumentId = req.headers['sf-content-document-id'];
     const awsFolderKey = req.headers['aws-folder-key'];
     const awsFileTitle = req.headers['aws-file-title'];
-    const sfParentid = req.headers['sf-parent-id'];
+    const sfParentId = req.headers['sf-parent-id'];
 
     res.send(`Heroku service to migrate Salesforce File has been started successfully. `);
     // Get salesforce response
-    const migrateSalesforceResult = migrateSalesforce(sfFileId, awsAccessKey, awsSecretKey, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFolderKey, awsFileTitle, sfFileSize, sfContentDocumentId, sfParentid);
+    const migrateSalesforceResult = migrateSalesforce(sfFileId, awsAccessKey, awsSecretKey, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFolderKey, awsFileTitle, sfFileSize, sfContentDocumentId, sfParentId);
 
   } catch(error){
     // Send failure email 
@@ -50,10 +50,10 @@ app.get('/uploadsalesforcefile', async (req, res) => {
 });
 
 // This methiod is used to handle all combine methods
-const migrateSalesforce = async (sfFileId, awsAccessKey, awsSecretKey, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFolderKey, awsFileTitle, sfFileSize, sfContentDocumentId, sfParentid) =>{
+const migrateSalesforce = async (sfFileId, awsAccessKey, awsSecretKey, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFolderKey, awsFileTitle, sfFileSize, sfContentDocumentId, sfParentId) =>{
       
   // Check required parameters
-  if(sfFileSize &&  sfFileId && sfParentid && awsFileTitle && awsFileTitle){
+  if(sfFileSize &&  sfFileId && sfParentId && awsFileTitle){
 
     // Get access token of salesforce
     const { accessToken, instanceUrl } = await getToken(sfClientId, sfClientSecret, sfUsername, sfPassword);
@@ -61,6 +61,7 @@ const migrateSalesforce = async (sfFileId, awsAccessKey, awsSecretKey, sfClientI
     // Get salesforce file information 
     const getSalesforceFileResult = await getSalesforceFile(accessToken, instanceUrl, sfFileId);
 
+    // Prepare aws file key, upload to s3 result
     var uploadToS3Result;
     var awsFileKey;
 
@@ -74,10 +75,10 @@ const migrateSalesforce = async (sfFileId, awsAccessKey, awsSecretKey, sfClientI
     } else {
 
       // If folder is not created then create folder then upload it to Amazon S3
-      const { getRecordHomeFolderResult } = await getRecordHomeFolder(accessToken, instanceUrl, sfParentid);
+      const { getRecordHomeFolderResult } = await getRecordHomeFolder(accessToken, instanceUrl, sfParentId);
  
       // Check reponse
-      if(getRecordHomeFolderResult.sObjects[0]){
+      if(getRecordHomeFolderResult.sObjects != null && getRecordHomeFolderResult.sObjects.size > 0){
         // Prepare aws folder key
         var awsFolderKey = getRecordHomeFolderResult.sObjects[0].NEILON__Amazon_File_Key__c;
         awsFileKey = awsFolderKey + '/' + awsFileTitle;
@@ -190,10 +191,10 @@ const uploadToS3 = async (buffer, folderPath, fileTitle, awsBucketName, awsBucke
 };
 
 // This method used to create record home folder for parent id
-const getRecordHomeFolder = (accessToken, instanceUrl, sfParentid) => {
+const getRecordHomeFolder = (accessToken, instanceUrl, sfParentId) => {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    const url = `${instanceUrl}/services/apexrest/NEILON/S3Link/v1/recordfolder/${sfParentid}`;
+    const url = `${instanceUrl}/services/apexrest/NEILON/S3Link/v1/recordfolder/${sfParentId}`;
 
     xhr.open('GET', url, true); 
     xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
@@ -280,13 +281,12 @@ app.get('/', async (req, res) => {
       const awsBucketRegion = 'ap-south-1';
       const sfFileSize = 178893;
       const sfContentDocumentId = '06AGB000018by5X2AQ';
-      //const awsFolderKey = "Accounts/Burlington Textiles Corp of America" // To check files whose folder is already created
       const awsFolderKey = null
       const awsFileTitle = "Appex String.png"
-      const sfParentid = '001GB00003EHIdqYAH'
+      const sfParentId = '001GB00003EHIdqYAH'
 
       res.send(`Heroku service to migrate Salesforce File has been started successfully.`);
-      const reponse = await migrateSalesforce (sfFileId, awsAccessKey, awsSecretKey, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFolderKey, awsFileTitle, sfFileSize, sfContentDocumentId, sfParentid);
+      const reponse = await migrateSalesforce (sfFileId, awsAccessKey, awsSecretKey, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFolderKey, awsFileTitle, sfFileSize, sfContentDocumentId, sfParentId);
 
     } catch (error) {
       console.error(error);
