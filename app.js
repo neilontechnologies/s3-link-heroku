@@ -46,7 +46,6 @@ app.get('/uploadsalesforcefile', async (req, res) => {
   } catch(error){
     // Send failure email 
     console.log(error);
-    // res.status(500).send(`Error: ${error || 'An unexpected error occurred.'}`);
   }
 });
 
@@ -75,11 +74,12 @@ const migrateSalesforce = async (sfFileId, awsAccessKey, awsSecretKey, sfClientI
     } else {
 
       // If folder is not created then create folder then upload it to Amazon S3
-      const { response } = await getRecordHomeFolder(accessToken, instanceUrl, sfParentid);
+      const { getRecordHomeFolderResult } = await getRecordHomeFolder(accessToken, instanceUrl, sfParentid);
  
       // Check reponse
-      if(response.sObjects[0]){
-        var awsFolderKey = response.sObjects[0].NEILON__Amazon_File_Key__c;
+      if(getRecordHomeFolderResult.sObjects[0]){
+        // Prepare aws folder key
+        var awsFolderKey = getRecordHomeFolderResult.sObjects[0].NEILON__Amazon_File_Key__c;
         awsFileKey = awsFolderKey + '/' + awsFileTitle;
         uploadToS3Result = await uploadToS3(getSalesforceFileResult, awsFolderKey, awsFileTitle, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);
       }
@@ -202,9 +202,9 @@ const getRecordHomeFolder = (accessToken, instanceUrl, sfParentid) => {
     xhr.onload = function() {
       if (xhr.readyState === 4) {
         if (xhr.status === 200) {
-          const response = JSON.parse(xhr.responseText);
+          const getRecordHomeFolderResult = JSON.parse(xhr.responseText);
           resolve({
-            response: response,
+            getRecordHomeFolderResult: getRecordHomeFolderResult,
           });  // Resolve the Promise on success
         }  else {
           reject(new Error(`ERROR: ${xhr.status} - ${xhr.statusText}`));  // Reject on error
@@ -214,7 +214,7 @@ const getRecordHomeFolder = (accessToken, instanceUrl, sfParentid) => {
 
     xhr.onerror = function(e) {
       // Handle network error
-      reject(new Error(`Your request to create S3-Files in Salesforce failed. Error: ${e}`));
+      reject(new Error(`Your request to create S3-Folder for the record failed. Error: ${e}`));
     };
 
     xhr.send();  // Send the request
