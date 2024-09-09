@@ -62,31 +62,32 @@ const migrateSalesforce = async (sfFileId, awsAccessKey, awsSecretKey, sfClientI
     // Get salesforce file information 
     const getSalesforceFileResult = await getSalesforceFile(accessToken, instanceUrl, sfFileId);
 
-    // check awsFolderKey availbale or not 
-    // TODO create new API for folder to get folder path
-    var uploadToS3Result;// 
+    var uploadToS3Result;
     var awsFileKey;
+
+    // Check if folder is created or not for uploading sf file id
     if(awsFolderKey){
-      console.log('------callling')
+      // Prepare aws file key
       awsFileKey = awsFolderKey + '/' + awsFileTitle;
-      console.log(awsFileKey);
+
+      // If folder is created then upload it to Amazon S3
       uploadToS3Result = await uploadToS3(getSalesforceFileResult, awsFolderKey, awsFileTitle, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);
     } else {
-      console.log('------callling2')
+
+      // If folder is not created then create folder then upload it to Amazon S3
       const { response } = await getRecordHomeFolder(accessToken, instanceUrl, sfParentid);
-      console.log(response)// TODO 
  
-      console.log(response.sObjects[0].NEILON__Bucket_Name__c);//TODO check size 
-      console.log(response.sObjects[0].NEILON__Amazon_File_Key__c);
-      if(response.sObjects[0])
-      var awsFolderKey = response.sObjects[0].NEILON__Amazon_File_Key__c;
-      awsFileKey = awsFolderKey + '/' + awsFileTitle;
-      uploadToS3Result = await uploadToS3(getSalesforceFileResult, awsFolderKey, awsFileTitle, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);
+      // Check reponse
+      if(response.sObjects[0]){
+        var awsFolderKey = response.sObjects[0].NEILON__Amazon_File_Key__c;
+        awsFileKey = awsFolderKey + '/' + awsFileTitle;
+        uploadToS3Result = await uploadToS3(getSalesforceFileResult, awsFolderKey, awsFileTitle, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);
+      }
     }
 
     // Create S3-File record in Salesforce org
     if(uploadToS3Result.$metadata.httpStatusCode === 200){
-      const createS3FilesInSalesforce1 = await createS3FilesInSalesforce(accessToken, instanceUrl, awsBucketName, awsFileKey, sfFileSize, sfContentDocumentId, sfFileId);
+      const createS3FilesInSalesforceResult = await createS3FilesInSalesforce(accessToken, instanceUrl, awsBucketName, awsFileKey, sfFileSize, sfContentDocumentId, sfFileId);
     }
   } else {
     throw new Error(`Salesforce File Id, Salesforce File Size, AWS Bucket Name, AWS Bucket Region or AWS File Path is missing.`);
@@ -188,25 +189,25 @@ const uploadToS3 = async (buffer, folderPath, fileTitle, awsBucketName, awsBucke
   }
 };
 
-// TODO
+// This method used to create record home folder for parent id
 const getRecordHomeFolder = (accessToken, instanceUrl, sfParentid) => {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     const url = `${instanceUrl}/services/apexrest/NEILON/S3Link/v1/recordfolder/${sfParentid}`;
 
-    xhr.open('GET', url, true);  // Corrected HTTP method 'GET'
+    xhr.open('GET', url, true); 
     xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
-    xhr.setRequestHeader('Content-Type', 'application/json');  // Set Content-Type header
+    xhr.setRequestHeader('Content-Type', 'application/json');  
 
-    xhr.onreadystatechange = function() {
+    xhr.onload = function() {
       if (xhr.readyState === 4) {
         if (xhr.status === 200) {
           const response = JSON.parse(xhr.responseText);
           resolve({
             response: response,
           });  // Resolve the Promise on success
-        } else {
-          reject(new Error('We are not able to get the Salesforce Authentication Token. This happens if the Salesforce Client Id, Client Secret, User Name, Password or Security Token is invalid.'));
+        }  else {
+          reject(new Error(`ERROR: ${xhr.status} - ${xhr.statusText}`));  // Reject on error
         }
       }
     };
@@ -220,6 +221,7 @@ const getRecordHomeFolder = (accessToken, instanceUrl, sfParentid) => {
   });
 };
 
+// This method used to create S3-Files record in salesforce
 const createS3FilesInSalesforce = (accessToken, instanceUrl, awsBucketName, awsFileKey, sfFileSize, sfContentDocumentId, sfFileId) => {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -242,8 +244,8 @@ const createS3FilesInSalesforce = (accessToken, instanceUrl, awsBucketName, awsF
     ];
 
     // Handle the response
-    xhr.onreadystatechange = function() {
-      if (xhr.readyState === 4) {  // Request is complete
+    xhr.onload = function() {
+      if (xhr.readyState === 4) {  
         if (xhr.status === 200) {
           const response = JSON.parse(xhr.responseText);
           resolve(response);  // Resolve the promise on success
@@ -276,10 +278,9 @@ app.get('/', async (req, res) => {
       const sfPassword = 'welcom12!53PcZzDygiBq4vKp5WtSK8mAD';
       const awsBucketName = 'neilon-dev2';
       const awsBucketRegion = 'ap-south-1';
-      //const awsFileKey = 'Accounts/Burlington Textiles Corp of America/Appex String.png'; 
       const sfFileSize = 178893;
       const sfContentDocumentId = '06AGB000018by5X2AQ';
-      //const awsFolderKey = "Accounts/Burlington Textiles Corp of America"
+      //const awsFolderKey = "Accounts/Burlington Textiles Corp of America" // To check files whose folder is already created
       const awsFolderKey = null
       const awsFileTitle = "Appex String.png"
       const sfParentid = '001GB00003EHIdqYAH'
