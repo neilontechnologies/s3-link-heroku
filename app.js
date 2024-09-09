@@ -78,7 +78,7 @@ const migrateSalesforce = async (sfFileId, awsAccessKey, awsSecretKey, sfClientI
       const { getRecordHomeFolderResult } = await getRecordHomeFolder(accessToken, instanceUrl, sfParentId);
  
       // Check reponse
-      if(getRecordHomeFolderResult.sObjects != null && getRecordHomeFolderResult.sObjects.size > 0){
+      if(getRecordHomeFolderResult.sObjects != null && getRecordHomeFolderResult.sObjects.length > 0){
         // Prepare aws folder key
         var awsFolderKey = getRecordHomeFolderResult.sObjects[0].NEILON__Amazon_File_Key__c;
         awsFileKey = awsFolderKey + '/' + awsFileTitle;
