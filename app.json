@@ -1,7 +1,7 @@
 {
     "name": "test-salesforce-heroku",
     "description": "A simple Node.js app deployed to Heroku",
-    "repository": "https://github.com/neilontechnologies/test-salesforce-heroku",
+    "repository": "https://github.com/neilontechnologies/s3link-heroku",
     "logo": "https://node-js-sample-1234567890ab.herokuapp.com/node.png",
     "keywords": ["node", "express"],
     "env": {
