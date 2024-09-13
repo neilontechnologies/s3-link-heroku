@@ -4,7 +4,7 @@
     "repository": "https://github.com/neilontechnologies/s3link-heroku",
     "logo": "https://node-js-sample-1234567890ab.herokuapp.com/node.png", 
     "keywords": ["node", "express", "aws", "salesforce", "heroku"],
-    "stack": "heroku-20",
+    "stack": "heroku-22",
     "env": {
       "API_KEY": {
         "description": "Heroku API Key for authentication",
