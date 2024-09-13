@@ -1,5 +1,5 @@
 {
-  "name": "test-salesforce-heroku",
+  "name": "s3link-heroku",
   "version": "1.0.0",
   "main": "app.js",
   "scripts": {
