@@ -7,8 +7,8 @@
     "stack": "heroku-22",
     "env": {
       "API_KEY": {
-        "description": "Heroku API Key for authentication",
-        "required": true
+        "description": "Heroku API Key for Salesforce Authentication",
+        "required": false
       }
     },
     "formation": {
