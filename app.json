@@ -1,20 +1,31 @@
 {
-  "name": "s3link-heroku",
-  "description": "A simple Node.js app deployed to Heroku",
-  "repository": "https://github.com/neilontechnologies/s3link-heroku",
-  "logo": "https://node-js-sample-1234567890ab.herokuapp.com/node.png",
-  "keywords": ["node", "express"],
-  "env": {
-    "PORT": {
-      "description": "Port on which the app will listen",
-      "value": "3000"
-    }
-  },
-  "buildpacks": [
-    {
-      "url": "heroku/nodejs"
-    }
-  ]
-}
-
+    "name": "s3link-heroku",
+    "description": "This will allow migrating Salesforce Files into Amazon S3.",
+    "repository": "https://github.com/neilontechnologies/s3link-heroku.git",
+    "logo": "https://node-js-sample-1234567890ab.herokuapp.com/node.png", 
+    "keywords": ["node", "express", "aws", "salesforce", "heroku"],
+    "stack": "heroku-20",
+    "env": {
+      "API_KEY": {
+        "description": "Heroku API Key for authentication",
+        "required": true
+      }
+    },
+    "formation": {
+      "web": {
+        "quantity": 1,
+        "size": "standard-1x"
+      }
+    },
+    "addons": [
+      {
+        "plan": "heroku-postgresql"
+      }
+    ],
+    "buildpacks": [
+      {
+        "url": "heroku/nodejs"
+      }
+    ]
+  }
   
