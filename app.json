@@ -2,7 +2,7 @@
     "name": "s3link-heroku",
     "description": "This will allow migrating Salesforce Files into Amazon S3.",
     "repository": "https://github.com/neilontechnologies/s3-link-heroku",
-    "logo": "https://node-js-sample-1234567890ab.herokuapp.com/node.png", 
+    "logo": "https://www.neilontechnologies.com/public/frontend/images/Neilon.PNG", 
     "keywords": ["node", "express", "aws", "salesforce", "heroku"],
     "stack": "heroku-22",
     "env": {
@@ -11,17 +11,6 @@
         "required": false
       }
     },
-    "formation": {
-      "web": {
-        "quantity": 1,
-        "size": "standard-1x"
-      }
-    },
-    "addons": [
-      {
-        "plan": "heroku-postgresql"
-      }
-    ],
     "buildpacks": [
       {
         "url": "heroku/nodejs"
