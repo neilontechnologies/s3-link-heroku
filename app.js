@@ -6,15 +6,17 @@ const app = express();
 app.use(express.urlencoded({extended:true}));
 app.use(express.json());
 app.use(cors());
+const bodyParser = require('body-parser');
+app.use(bodyParser.json())
 
 const XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
 
 // Use to authenticate heroku access key
 app.use((req, res, next) => {
   const apiKey = process.env.API_KEY;
-  const providedAccessKey = req.headers['heroku-api-key'];
+  const { heroku_api_key } = req.body;
 
-  if(providedAccessKey === apiKey){
+  if(heroku_api_key === apiKey){
     next(); 
   } else{
     res.status(403).send('Forbidden: Invalid Heroku API Key');
@@ -22,26 +24,20 @@ app.use((req, res, next) => {
 });
 
 // This service is used to upload salesforce files and attachments into Amazon S3
-app.get('/uploadsalesforcefile', async (req, res) => {
+app.post('/uploadsalesforcefile', async (req, res) => {
   try{
-    const sfFileId = req.headers['sf-file-id']; 
-    const awsAccessKey = req.headers['aws-access-key'];
-    const awsSecretKey = req.headers['aws-secret-key'];
-    const sfClientId = req.headers['sf-client-id'];
-    const sfClientSecret = req.headers['sf-client-secret'];
-    const sfUsername = req.headers['sf-username'];
-    const sfPassword = req.headers['sf-password'];
-    const awsBucketName = req.headers['aws-bucket-name'];
-    const awsBucketRegion = req.headers['aws-bucket-region'];
-    const sfFileSize = parseInt(req.headers['sf-file-size'], 10)
-    const sfContentDocumentId = req.headers['sf-content-document-id'];
-    const awsFolderKey = req.headers['aws-folder-key'];
-    const awsFileTitle = req.headers['aws-file-title'];
-    const sfParentId = req.headers['sf-parent-id'];
+    const {
+      aws_access_key, aws_secret_key, sf_client_id, sf_client_secret,
+      sf_username, sf_password, aws_file_title, sf_parent_id,
+      aws_folder_key, aws_bucket_name, aws_bucket_region,
+      sf_content_document_id, sf_file_size, sf_file_id
+    } = req.body; 
 
-    res.send(`Heroku service to migrate Salesforce File has been started successfully. `);
+    // We are sending the request immediately because we cannot wait untill the whole migration is completed. It will timeout the API request in Apex.
+    res.send(`Heroku service to migrate Salesforce File has been started successfully.`);
+
     // Get salesforce response
-    const migrateSalesforceResult = migrateSalesforce(sfFileId, awsAccessKey, awsSecretKey, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFolderKey, awsFileTitle, sfFileSize, sfContentDocumentId, sfParentId);
+    const migrateSalesforceResult = migrateSalesforce(sf_file_id, aws_access_key, aws_secret_key, sf_client_id, sf_client_secret, sf_username, sf_password, aws_bucket_name, aws_bucket_region, aws_folder_key, aws_file_title, sf_file_size, sf_content_document_id, sf_parent_id);
 
   } catch(error){
     // Send failure email 
@@ -270,22 +266,24 @@ const createS3FilesInSalesforce = (accessToken, instanceUrl, awsBucketName, awsF
 app.get('/', async (req, res) => {
     try {
       // Replace these values with your own Salesforce Connected App credentials
-      const sfFileId = '068GB00000oZ3ADYA0'; 
-      const awsAccessKey = 'AKIA3HJD3T3REEHJPVAU';
-      const awsSecretKey = 'zjUBWEmN49TGhVempmKq0ksK9JhkC08/Gipw+0gt';
-      const sfClientId = '3MVG94Jqh209Cp4Sg3eoGq6oVTedfg_fgyjYgP_EZSZ2S5FbZF83M9O5hpQIcPaxUM.QfAvRMFcqsloah6N64';
-      const sfClientSecret = '31A129DE199480F96179017876FE4A92F8907309C2F556CAE530C2CA27966950';
-      const sfUsername = 'dev2@neilon.com';
-      const sfPassword = 'welcom12!53PcZzDygiBq4vKp5WtSK8mAD';
-      const awsBucketName = 'neilon-dev2';
-      const awsBucketRegion = 'ap-south-1';
-      const sfFileSize = 178893;
-      const sfContentDocumentId = '06AGB000018by5X2AQ';
-      const awsFolderKey = null
-      const awsFileTitle = "Appex String.png"
-      const sfParentId = '001GB00003EHIdqYAH'
+      const sfFileId = '{SALESFORCE_CONTENT_VERSION_ID}'; 
+      const awsAccessKey = '{AWS_ACCESS_KEY}';
+      const awsSecretKey = '{AWS_SECRET_KEY}';
+      const sfClientId = '{SALESFORCE_CLIENT_ID}';
+      const sfClientSecret = '{SALESFORCE_CLIENT_SECRET_KEY}';
+      const sfUsername = '{SALESFORCE_USERNAME}';
+      const sfPassword = '{SALESFORCE_PASSWORD}';
+      const awsBucketName = '{AWS_BUCKET_NAME}';
+      const awsBucketRegion = '{AWS_BUCKET_REGION}';
+      const sfFileSize = '{SALESFORCE_FILE_SIZE}';
+      const sfContentDocumentId = '{SALESFORCE_CONTENT_DOCUMENT_ID}';
+      const awsFolderKey = '{AWS_FOLDER_KEY}';
+      const awsFileTitle = '{AWS_FILE_TITLE}';
+      const sfParentId = '{SALESFORCE_PARENT_ID}';
 
+      // We are sending the request immediately because we cannot wait untill the whole migration is completed. It will timeout the API request in Apex.
       res.send(`Heroku service to migrate Salesforce File has been started successfully.`);
+      
       const reponse = await migrateSalesforce (sfFileId, awsAccessKey, awsSecretKey, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFolderKey, awsFileTitle, sfFileSize, sfContentDocumentId, sfParentId);
 
     } catch (error) {
