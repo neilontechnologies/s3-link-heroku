@@ -26,36 +26,47 @@ app.use((req, res, next) => {
 // This service is used to upload salesforce files and attachments into Amazon S3
 app.post('/uploadsalesforcefile', async (req, res) => {
   try{
+    // Get all headers from apex
     const {
       aws_access_key, aws_secret_key, sf_client_id, sf_client_secret,
       sf_username, sf_password, aws_file_title, sf_parent_id,
       aws_folder_key, aws_bucket_name, aws_bucket_region,
-      sf_content_document_id, sf_file_size, sf_file_id
+      sf_content_document_id, sf_file_size, sf_file_id, sf_content_document_link_id, sf_namespace
     } = req.body; 
 
     // We are sending the request immediately because we cannot wait untill the whole migration is completed. It will timeout the API request in Apex.
     res.send(`Heroku service to migrate Salesforce File has been started successfully.`);
 
     // Get salesforce response
-    const migrateSalesforceResult = migrateSalesforce(sf_file_id, aws_access_key, aws_secret_key, sf_client_id, sf_client_secret, sf_username, sf_password, aws_bucket_name, aws_bucket_region, aws_folder_key, aws_file_title, sf_file_size, sf_content_document_id, sf_parent_id);
+    const migrateSalesforceResult = migrateSalesforce(sf_file_id, aws_access_key, aws_secret_key, sf_client_id, sf_client_secret, sf_username, sf_password, aws_bucket_name, aws_bucket_region, aws_folder_key, aws_file_title, sf_file_size, sf_content_document_id, sf_parent_id, sf_content_document_link_id, sf_namespace);
 
   } catch(error){
-    // Send failure email 
     console.log(error);
   }
 });
 
 // This methiod is used to handle all combine methods
-const migrateSalesforce = async (sfFileId, awsAccessKey, awsSecretKey, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFolderKey, awsFileTitle, sfFileSize, sfContentDocumentId, sfParentId) =>{
+const migrateSalesforce = async (sfFileId, awsAccessKey, awsSecretKey, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFolderKey, awsFileTitle, sfFileSize, sfContentDocumentId, sfParentId, sfContentDocumentLinkId, sfNamespace) =>{
       
+  let accessToken;
+  let instanceUrl;
+  
+  // Get access token of salesforce
+  const tokenResponse = await getToken(sfClientId, sfClientSecret, sfUsername, sfPassword);
+
+  // Check if access token and instance URL are available or not
+  if(!tokenResponse.accessToken || !tokenResponse.instanceUrl){
+    console.error(tokenResponse);
+    return;
+  } else {
+    accessToken = tokenResponse.accessToken;
+    instanceUrl = tokenResponse.instanceUrl
+  }
+
   // Check required parameters
   if(sfFileSize &&  sfFileId && sfParentId && awsFileTitle){
-
-    // Get access token of salesforce
-    const { accessToken, instanceUrl } = await getToken(sfClientId, sfClientSecret, sfUsername, sfPassword);
-    
     // Get salesforce file information 
-    const getSalesforceFileResult = await getSalesforceFile(accessToken, instanceUrl, sfFileId);
+    const getSalesforceFileResult = await getSalesforceFile(accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, sfNamespace);
 
     // Prepare aws file key, upload to s3 result
     var uploadToS3Result;
@@ -67,27 +78,41 @@ const migrateSalesforce = async (sfFileId, awsAccessKey, awsSecretKey, sfClientI
       awsFileKey = awsFolderKey + '/' + awsFileTitle;
 
       // If folder is created then upload it to Amazon S3
-      uploadToS3Result = await uploadToS3(getSalesforceFileResult, awsFolderKey, awsFileTitle, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);
+      uploadToS3Result = await uploadToS3(getSalesforceFileResult, awsFolderKey, awsFileTitle, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey, accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, sfNamespace);
     } else {
 
       // If folder is not created then create folder then upload it to Amazon S3
-      const { getRecordHomeFolderResult } = await getRecordHomeFolder(accessToken, instanceUrl, sfParentId);
+      const { getRecordHomeFolderResult } = await getRecordHomeFolder(accessToken, instanceUrl, sfParentId, sfFileId, sfContentDocumentLinkId, sfNamespace);
  
       // Check reponse
       if(getRecordHomeFolderResult.sObjects != null && getRecordHomeFolderResult.sObjects.length > 0){
         // Prepare aws folder key
-        var awsFolderKey = getRecordHomeFolderResult.sObjects[0].NEILON__Amazon_File_Key__c;
+        var awsFolderKey
+
+        // Check namespace is available or not
+        awsFolderKey = getRecordHomeFolderResult.sObjects[0][sfNamespace + 'Amazon_File_Key__c'];
         awsFileKey = awsFolderKey + '/' + awsFileTitle;
-        uploadToS3Result = await uploadToS3(getSalesforceFileResult, awsFolderKey, awsFileTitle, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey);
+        uploadToS3Result = await uploadToS3(getSalesforceFileResult, awsFolderKey, awsFileTitle, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey, accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, sfNamespace);
+      } else{
+          // Prepare failure rason with error message of API
+          const failureReason = 'Your request to create S3-Folder for the record failed. ERROR: ' + getRecordHomeFolderResult.message ;
+
+          // Create File Migration Logs
+          const createFileMigrationLogResult = await createFileMigrationLog(accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, failureReason, sfNamespace);
       }
     }
 
     // Create S3-File record in Salesforce org
-    if(uploadToS3Result.$metadata.httpStatusCode === 200){
-      const createS3FilesInSalesforceResult = await createS3FilesInSalesforce(accessToken, instanceUrl, awsBucketName, awsFileKey, sfFileSize, sfContentDocumentId, sfFileId);
+    if(uploadToS3Result && uploadToS3Result.$metadata.httpStatusCode === 200){
+      const createS3FilesInSalesforceResult = await createS3FilesInSalesforce(accessToken, instanceUrl, awsBucketName, awsFileKey, sfFileSize, sfContentDocumentId, sfFileId, sfContentDocumentLinkId, sfNamespace);
     }
   } else {
-    throw new Error(`Salesforce File Id, Salesforce File Size, AWS Bucket Name, AWS Bucket Region or AWS File Path is missing.`);
+    // Prepare failure rason with error message of API
+    const failureReason = 'Salesforce File Id, Salesforce File Size, AWS Bucket Name, AWS Bucket Region or AWS File Path is missing.';
+
+    // Create File Migration Logs
+    const createFileMigrationLogResult = await createFileMigrationLog(accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, failureReason, sfNamespace);
+    throw new Error(failureReason);
   }
 }
 
@@ -102,20 +127,20 @@ const getToken = (sfClientId, sfClientSecret, sfUsername, sfPassword) => {
   
       xhr.onload = function(){
         if(xhr.readyState === 4){
+          const response = JSON.parse(xhr.responseText);
           if(xhr.status === 200){
-            const response = JSON.parse(xhr.responseText);
             resolve({
               accessToken: response.access_token,
               instanceUrl: response.instance_url
             });
           } else {
-            reject(new Error('We are not able to get the Salesforce Authentication Token. This happens if the Salesforce Client Id, Client Secret, User Name, Password or Security Token is invalid.'));
+            reject(new Error('We are not able to get the Salesforce Authentication Token. This happens if the Salesforce Client Id, Client Secret, User Name, Password or Security Token is invalid. ERROR: ' + response.error_description));
           }
         }
       };
   
       xhr.onerror = function(e){
-        reject(new Error(`Your request to get Salesforce Authentication Token failed. This happens if the Salesforce Client Id, Client Secret, User Name, Password or Security Token is invalid. : ${e.message}`));
+        reject(new Error('We are not able to get the Salesforce Authentication Token. This happens if the Salesforce Client Id, Client Secret, User Name, Password or Security Token is invalid. ERROR: ' + e.message));
       };
   
       xhr.send(postData);
@@ -123,8 +148,7 @@ const getToken = (sfClientId, sfClientSecret, sfUsername, sfPassword) => {
 };
 
 // This method is used to get salesforce file information with the help of access token of that org, URL, provided salesforce file id  
-const getSalesforceFile = async (accessToken, instanceUrl, sfFileId) => {
-  
+const getSalesforceFile = async (accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, sfNamespace) => {
   var url;
   // Prepare url of attachments or content document
   if(sfFileId.startsWith('00P')){
@@ -143,7 +167,7 @@ const getSalesforceFile = async (accessToken, instanceUrl, sfFileId) => {
 
     // Returns the response status code
     if(!response.ok){
-      throw new Error(`We are not able to fetch the Salesforce File Content. Error: ${response.statusText}`);
+      throw new Error(`We are not able to fetch the Salesforce File Content. ERROR: ${response.statusText}`);
     }
 
     const blob = await response.blob();
@@ -151,16 +175,18 @@ const getSalesforceFile = async (accessToken, instanceUrl, sfFileId) => {
     const buffer = Buffer.from(arrayBuffer);
     return buffer;
   } catch(error){
-    console.error('We are not able to fetch the Salesforce File Content. Error: ', error);
+    // Create File Migration Logs
+    const createFileMigrationLogResult = await createFileMigrationLog(accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, error.message, sfNamespace);
+    console.error(error);
     throw error;
   }
 };
 
 // This method is used to upload Salesforce file into Amazon S3 with the help of provided AWS data
-const uploadToS3 = async (buffer, folderPath, fileTitle, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey) => {
+const uploadToS3 = async (buffer, folderPath, fileTitle, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey, accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, sfNamespace) => {
   try {
-
     var key = folderPath + '/' + fileTitle;
+
     // Prepare AWS data
     const command = new PutObjectCommand({
         Bucket: awsBucketName,
@@ -181,16 +207,28 @@ const uploadToS3 = async (buffer, folderPath, fileTitle, awsBucketName, awsBucke
     const response = await s3Client.send(command);
     return response;
   } catch (error) {
-    console.error('Your request to upload file in Amazon S3 has failed. Error: ', error.message);
+    // Prepare failure rason with error message of API
+    const failureReason = 'Your request to upload file in Amazon S3 has failed. ERROR: '+ error.message;
+
+    // Create File Migration Logs
+    const createFileMigrationLogResult = await createFileMigrationLog(accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, failureReason, sfNamespace);
+    console.error(failureReason);
     throw error.message; 
   }
 };
 
 // This method used to create record home folder for parent id
-const getRecordHomeFolder = (accessToken, instanceUrl, sfParentId) => {
+const getRecordHomeFolder = (accessToken, instanceUrl, sfParentId, sfFileId, sfContentDocumentLinkId, sfNamespace) => {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    const url = `${instanceUrl}/services/apexrest/NEILON/S3Link/v1/recordfolder/${sfParentId}`;
+    let url;
+
+    // Check namespace is available or not
+    if(sfNamespace){
+      url = `${instanceUrl}/services/apexrest/NEILON/S3Link/v1/recordfolder/${sfParentId}`;
+    } else{
+      url = `${instanceUrl}/services/apexrest/S3Link/v1/recordfolder/${sfParentId}`;
+    }
 
     xhr.open('GET', url, true); 
     xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
@@ -198,63 +236,149 @@ const getRecordHomeFolder = (accessToken, instanceUrl, sfParentId) => {
 
     xhr.onload = function() {
       if (xhr.readyState === 4) {
+        const response = JSON.parse(xhr.responseText);
+        console.log(response);
         if (xhr.status === 200) {
-          const getRecordHomeFolderResult = JSON.parse(xhr.responseText);
           resolve({
-            getRecordHomeFolderResult: getRecordHomeFolderResult,
+            getRecordHomeFolderResult: response
           });  // Resolve the Promise on success
         }  else {
-          reject(new Error(`ERROR: ${xhr.status} - ${xhr.statusText}`));  // Reject on error
+          // Prepare failure rason with error message of API
+          const failureReason = 'Your request to create S3-Folder for the record failed. ERROR: ' + response[0].message;
+
+          // Create File Migration Logs
+          const createFileMigrationLogResult =  createFileMigrationLog(accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, failureReason, sfNamespace);
+          reject(new Error(failureReason));
         }
       }
     };
 
     xhr.onerror = function(e) {
-      // Handle network error
-      reject(new Error(`Your request to create S3-Folder for the record failed. Error: ${e}`));
-    };
+      // Prepare failure rason with error message of API
+      const failureReason = 'Your request to create S3-Folder for the record failed. ERROR: ' + e;
 
-    xhr.send();  // Send the request
+      // Create File Migration Logs
+      const createFileMigrationLogResult =  createFileMigrationLog(accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, failureReason, sfNamespace);
+
+      // Handle network error
+      reject(new Error(failureReason));
+    };
+    xhr.send();
   });
 };
 
 // This method used to create S3-Files record in salesforce
-const createS3FilesInSalesforce = (accessToken, instanceUrl, awsBucketName, awsFileKey, sfFileSize, sfContentDocumentId, sfFileId) => {
+const createS3FilesInSalesforce = async (accessToken, instanceUrl, awsBucketName, awsFileKey, sfFileSize, sfContentDocumentId, sfFileId, sfContentDocumentLinkId, sfNamespace) => {
   return new Promise((resolve, reject) => {
+    let url;
     const xhr = new XMLHttpRequest();
-    const url = `${instanceUrl}/services/apexrest/NEILON/S3Link/v1/creates3files/`;
+
+    // Check namespace is available or not
+    if(sfNamespace != ''){
+      url = `${instanceUrl}/services/apexrest/NEILON/S3Link/v1/creates3files/`;
+    } else {
+      url = `${instanceUrl}/services/apexrest/S3Link/v1/creates3files/`;
+    }
+    
+    // Prepare the request body with S3-File data
+    var body = [];
+    var s3File = {};
+    s3File[sfNamespace + 'Bucket_Name__c'] = awsBucketName;
+    s3File[sfNamespace + 'Amazon_File_Key__c'] = awsFileKey;
+    s3File[sfNamespace + 'Size__c'] = sfFileSize;
+    s3File[sfNamespace + 'Content_Document_Id__c'] = sfContentDocumentId;
+    s3File[sfNamespace + 'Export_Attachment_Id__c'] = sfFileId;
+    body.push(s3File);
 
     // Open the request
     xhr.open('POST', url, true);
     xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
     xhr.setRequestHeader('Content-Type', 'application/json');
 
-    // Prepare the request body with S3-File data
-    const body = [
-      {
-        "NEILON__Bucket_Name__c": awsBucketName,
-        "NEILON__Amazon_File_Key__c": awsFileKey,
-        "NEILON__Size__c": sfFileSize,
-        "NEILON__Content_Document_Id__c": sfContentDocumentId, 
-        "NEILON__Export_Attachment_Id__c": sfFileId
-      }
-    ];
-
     // Handle the response
     xhr.onload = function() {
       if (xhr.readyState === 4) {  
+        const response = JSON.parse(xhr.responseText);
+        console.log(response);
         if (xhr.status === 200) {
-          const response = JSON.parse(xhr.responseText);
-          resolve(response);  // Resolve the promise on success
+          if(response.sObjects && response.sObjects.length > 0 && !response.sObjects[0].Id){
+            // Prepare failure rason with error message of API
+            const failureReason = 'Your request to create S3-Files in Salesforce failed. ERROR: ' + response.sObjects[0][sfNamespace + 'Description__c'];
+
+            // Create File Migration Logs
+            const createFileMigrationLogResult =  createFileMigrationLog(accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, failureReason, sfNamespace);
+          } else{
+            resolve(response);
+          }
         } else {
-          reject(new Error(`ERROR: ${xhr.status} - ${xhr.statusText}`));  // Reject on error
+          // Prepare failure rason with error message of API
+          const failureReason = 'Your request to create S3-Files in Salesforce failed. ERROR: ' + response[0].message;
+
+          // Create File Migration Logs
+          const createFileMigrationLogResult =  createFileMigrationLog(accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, failureReason, sfNamespace);
+          reject(new Error(failureReason));
         }
       }
     };
 
     // Handle network errors
     xhr.onerror = function(e) {
-      reject(new Error('Your request to create S3-Files in Salesforce failed. Error: ' + e));
+      // Prepare failure rason with error message of API
+      const failureReason = 'Your request to create S3-Files in Salesforce failed. ERROR: ' + e;
+
+      // Create File Migration Logs
+      const createFileMigrationLogResult = createFileMigrationLog(accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, failureReason, sfNamespace);
+      reject(new Error(failureReason));
+    };
+
+    // Send the request with the JSON body
+    xhr.send(JSON.stringify(body));
+  });
+};
+
+// This method used to create Salesforce File Migration Log record in salesforce
+const createFileMigrationLog = (accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, failureReason, sfNamespace) => {
+  return new Promise((resolve, reject) => {
+    let url;
+    const xhr = new XMLHttpRequest();
+    if(false){
+      url = `${instanceUrl}/services/apexrest/NEILON/S3Link/v1/createmigrationlog/`;
+    } else {
+      url = `${instanceUrl}/services/apexrest/S3Link/v1/createmigrationlog/`;
+    }
+    
+    // Open the request
+    xhr.open('POST', url, true);
+    xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+
+    // Create body
+    const body = {}
+
+    // Check file type is attachment or content document link
+    if (sfFileId.startsWith('00P')) {
+        body.SalesforceFileId = sfFileId;
+    } else {
+        body.SalesforceFileId = sfContentDocumentLinkId;
+    }
+    body.FailureReason = failureReason;
+
+    // Handle the response
+    xhr.onload = function() {
+      if (xhr.readyState === 4) {  
+        const response = JSON.parse(xhr.responseText);
+        console.log(response);
+        if (xhr.status === 200) {
+          resolve(response);
+        } else {
+          reject(new Error('Your request to create Salesforce Files Migration log in Salesforce failed. ERROR: ' + xhr.statusText));
+        }
+      }
+    };
+
+    // Handle network errors
+    xhr.onerror = function(e) {
+      reject(new Error('Your request to create Salesforce Files Migration log in Salesforce failed. ERROR: ' + e));
     };
 
     // Send the request with the JSON body
@@ -280,12 +404,13 @@ app.get('/', async (req, res) => {
       const awsFolderKey = '{AWS_FOLDER_KEY}';
       const awsFileTitle = '{AWS_FILE_TITLE}';
       const sfParentId = '{SALESFORCE_PARENT_ID}';
+      const sfContentDocumentLinkId = '{SALESFORCE_CONTENT_DOCUMENT_LINK_ID}';
+      const sfNamespace = '{SALESFORCE_NAMESPACE}';
 
       // We are sending the request immediately because we cannot wait untill the whole migration is completed. It will timeout the API request in Apex.
       res.send(`Heroku service to migrate Salesforce File has been started successfully.`);
       
-      const reponse = await migrateSalesforce (sfFileId, awsAccessKey, awsSecretKey, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFolderKey, awsFileTitle, sfFileSize, sfContentDocumentId, sfParentId);
-
+      const reponse = await migrateSalesforce (sfFileId, awsAccessKey, awsSecretKey, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFolderKey, awsFileTitle, sfFileSize, sfContentDocumentId, sfParentId, sfContentDocumentLinkId, sfNamespace);
     } catch (error) {
       console.error(error);
     }
@@ -295,4 +420,3 @@ const port = process.env.PORT || 3008;
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
-
