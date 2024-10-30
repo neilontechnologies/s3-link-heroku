@@ -296,7 +296,7 @@ const createS3FilesInSalesforce = async (accessToken, instanceUrl, awsBucketName
     xhr.setRequestHeader('Content-Type', 'application/json');
 
     if(sfDeleteFile){
-      xhr.setRequestHeader('delete-salesforce-file', sfDeleteFile);
+      xhr.setRequestHeader('delete-salesforce-file', 'true');
     }
 
     // Handle the response
