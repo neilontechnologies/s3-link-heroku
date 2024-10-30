@@ -31,14 +31,14 @@ app.post('/uploadsalesforcefile', async (req, res) => {
       aws_access_key, aws_secret_key, sf_client_id, sf_client_secret,
       sf_username, sf_password, aws_file_title, sf_parent_id,
       aws_folder_key, aws_bucket_name, aws_bucket_region,
-      sf_content_document_id, sf_file_size, sf_file_id, sf_content_document_link_id, sf_namespace
+      sf_content_document_id, sf_file_size, sf_file_id, sf_content_document_link_id, sf_namespace, sf_delete_file
     } = req.body; 
 
     // We are sending the request immediately because we cannot wait untill the whole migration is completed. It will timeout the API request in Apex.
     res.send(`Heroku service to migrate Salesforce File has been started successfully.`);
 
     // Get salesforce response
-    const migrateSalesforceResult = migrateSalesforce(sf_file_id, aws_access_key, aws_secret_key, sf_client_id, sf_client_secret, sf_username, sf_password, aws_bucket_name, aws_bucket_region, aws_folder_key, aws_file_title, sf_file_size, sf_content_document_id, sf_parent_id, sf_content_document_link_id, sf_namespace);
+    const migrateSalesforceResult = migrateSalesforce(sf_file_id, aws_access_key, aws_secret_key, sf_client_id, sf_client_secret, sf_username, sf_password, aws_bucket_name, aws_bucket_region, aws_folder_key, aws_file_title, sf_file_size, sf_content_document_id, sf_parent_id, sf_content_document_link_id, sf_namespace, sf_delete_file);
 
   } catch(error){
     console.log(error);
@@ -46,7 +46,7 @@ app.post('/uploadsalesforcefile', async (req, res) => {
 });
 
 // This methiod is used to handle all combine methods
-const migrateSalesforce = async (sfFileId, awsAccessKey, awsSecretKey, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFolderKey, awsFileTitle, sfFileSize, sfContentDocumentId, sfParentId, sfContentDocumentLinkId, sfNamespace) =>{
+const migrateSalesforce = async (sfFileId, awsAccessKey, awsSecretKey, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFolderKey, awsFileTitle, sfFileSize, sfContentDocumentId, sfParentId, sfContentDocumentLinkId, sfNamespace, sfDeleteFile) =>{
       
   let accessToken;
   let instanceUrl;
@@ -104,7 +104,7 @@ const migrateSalesforce = async (sfFileId, awsAccessKey, awsSecretKey, sfClientI
 
     // Create S3-File record in Salesforce org
     if(uploadToS3Result && uploadToS3Result.$metadata.httpStatusCode === 200){
-      const createS3FilesInSalesforceResult = await createS3FilesInSalesforce(accessToken, instanceUrl, awsBucketName, awsFileKey, sfFileSize, sfContentDocumentId, sfFileId, sfContentDocumentLinkId, sfNamespace);
+      const createS3FilesInSalesforceResult = await createS3FilesInSalesforce(accessToken, instanceUrl, awsBucketName, awsFileKey, sfFileSize, sfContentDocumentId, sfFileId, sfContentDocumentLinkId, sfNamespace, sfDeleteFile);
     }
   } else {
     // Prepare failure rason with error message of API
@@ -268,7 +268,7 @@ const getRecordHomeFolder = (accessToken, instanceUrl, sfParentId, sfFileId, sfC
 };
 
 // This method used to create S3-Files record in salesforce
-const createS3FilesInSalesforce = async (accessToken, instanceUrl, awsBucketName, awsFileKey, sfFileSize, sfContentDocumentId, sfFileId, sfContentDocumentLinkId, sfNamespace) => {
+const createS3FilesInSalesforce = async (accessToken, instanceUrl, awsBucketName, awsFileKey, sfFileSize, sfContentDocumentId, sfFileId, sfContentDocumentLinkId, sfNamespace, sfDeleteFile) => {
   return new Promise((resolve, reject) => {
     let url;
     const xhr = new XMLHttpRequest();
@@ -294,6 +294,10 @@ const createS3FilesInSalesforce = async (accessToken, instanceUrl, awsBucketName
     xhr.open('POST', url, true);
     xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
     xhr.setRequestHeader('Content-Type', 'application/json');
+
+    if(sfDeleteFile){
+      xhr.setRequestHeader('delete-salesforce-file', sfDeleteFile);
+    }
 
     // Handle the response
     xhr.onload = function() {
@@ -406,11 +410,12 @@ app.get('/', async (req, res) => {
       const sfParentId = '{SALESFORCE_PARENT_ID}';
       const sfContentDocumentLinkId = '{SALESFORCE_CONTENT_DOCUMENT_LINK_ID}';
       const sfNamespace = '{SALESFORCE_NAMESPACE}';
+      const sfDeleteFile = '{SALESFORCE_DELETE_FILE}';
 
       // We are sending the request immediately because we cannot wait untill the whole migration is completed. It will timeout the API request in Apex.
       res.send(`Heroku service to migrate Salesforce File has been started successfully.`);
       
-      const reponse = await migrateSalesforce (sfFileId, awsAccessKey, awsSecretKey, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFolderKey, awsFileTitle, sfFileSize, sfContentDocumentId, sfParentId, sfContentDocumentLinkId, sfNamespace);
+      const reponse = await migrateSalesforce (sfFileId, awsAccessKey, awsSecretKey, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFolderKey, awsFileTitle, sfFileSize, sfContentDocumentId, sfParentId, sfContentDocumentLinkId, sfNamespace, sfDeleteFile);
     } catch (error) {
       console.error(error);
     }
