@@ -63,7 +63,7 @@ const migrateSalesforce = async (sfFileId, awsAccessKey, awsSecretKey, sfClientI
   }
 
   // Check required parameters
-  if(sfFileSize &&  sfFileId && sfParentId && awsFileTitle){
+  if(sfFileSize &&  sfFileId && (awsFolderKey || sfParentId) && awsFileTitle){
     // Get salesforce file information 
     const getSalesforceFileResult = await getSalesforceFile(accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, sfNamespace, sfCreateLog);
 
@@ -491,4 +491,3 @@ const port = process.env.PORT || 3008;
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
-
