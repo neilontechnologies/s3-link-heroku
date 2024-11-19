@@ -31,14 +31,14 @@ app.post('/uploadsalesforcefile', async (req, res) => {
       aws_access_key, aws_secret_key, sf_client_id, sf_client_secret,
       sf_username, sf_password, aws_file_title, sf_parent_id,
       aws_folder_key, aws_bucket_name, aws_bucket_region,
-      sf_content_document_id, sf_file_size, sf_file_id, sf_content_document_link_id, sf_namespace, sf_delete_file, sf_create_log, s3_file, aws_kms_key, aws_file_meta_data
+      sf_content_document_id, sf_file_size, sf_file_id, sf_content_document_link_id, sf_namespace, sf_delete_file, sf_create_log, s3_file, aws_kms_key, aws_file_meta_data, aws_session_token
     } = req.body;
 
     // We are sending the request immediately because we cannot wait untill the whole migration is completed. It will timeout the API request in Apex.
     res.send(`Heroku service to migrate Salesforce File has been started successfully.`);
 
     // Get salesforce response
-    const migrateSalesforceResult = migrateSalesforce(sf_file_id, aws_access_key, aws_secret_key, sf_client_id, sf_client_secret, sf_username, sf_password, aws_bucket_name, aws_bucket_region, aws_folder_key, aws_file_title, sf_file_size, sf_content_document_id, sf_parent_id, sf_content_document_link_id, sf_namespace, sf_delete_file, sf_create_log, s3_file, aws_kms_key, aws_file_meta_data);
+    const migrateSalesforceResult = migrateSalesforce(sf_file_id, aws_access_key, aws_secret_key, aws_session_token, sf_client_id, sf_client_secret, sf_username, sf_password, aws_bucket_name, aws_bucket_region, aws_folder_key, aws_file_title, sf_file_size, sf_content_document_id, sf_parent_id, sf_content_document_link_id, sf_namespace, sf_delete_file, sf_create_log, s3_file, aws_kms_key, aws_file_meta_data);
 
   } catch(error){
     console.log(error);
@@ -46,7 +46,7 @@ app.post('/uploadsalesforcefile', async (req, res) => {
 });
 
 // This methiod is used to handle all combine methods
-const migrateSalesforce = async (sfFileId, awsAccessKey, awsSecretKey, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFolderKey, awsFileTitle, sfFileSize, sfContentDocumentId, sfParentId, sfContentDocumentLinkId, sfNamespace, sfDeleteFile, sfCreateLog, s3File, awsKMSKey, awsFileMetadata) =>{
+const migrateSalesforce = async (sfFileId, awsAccessKey, awsSecretKey, awsSessionToken, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFolderKey, awsFileTitle, sfFileSize, sfContentDocumentId, sfParentId, sfContentDocumentLinkId, sfNamespace, sfDeleteFile, sfCreateLog, s3File, awsKMSKey, awsFileMetadata) =>{
   let accessToken;
   let instanceUrl;
   
@@ -77,7 +77,7 @@ const migrateSalesforce = async (sfFileId, awsAccessKey, awsSecretKey, sfClientI
       awsFileKey = awsFolderKey + '/' + awsFileTitle;
 
       // If folder is created then upload it to Amazon S3
-      uploadToS3Result = await uploadToS3(getSalesforceFileResult, awsFolderKey, awsFileTitle, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey, accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, sfNamespace, sfCreateLog, s3File, awsKMSKey, awsFileMetadata);
+      uploadToS3Result = await uploadToS3(getSalesforceFileResult, awsFolderKey, awsFileTitle, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey, awsSessionToken, accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, sfNamespace, sfCreateLog, s3File, awsKMSKey, awsFileMetadata);
     } else {
 
       // If folder is not created then create folder then upload it to Amazon S3
@@ -91,7 +91,7 @@ const migrateSalesforce = async (sfFileId, awsAccessKey, awsSecretKey, sfClientI
         // Check namespace is available or not
         awsFolderKey = getRecordHomeFolderResult.sObjects[0][sfNamespace + 'Amazon_File_Key__c'];
         awsFileKey = awsFolderKey + '/' + awsFileTitle;
-        uploadToS3Result = await uploadToS3(getSalesforceFileResult, awsFolderKey, awsFileTitle, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey, accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, sfNamespace, sfCreateLog, s3File, awsKMSKey, awsFileMetadata);
+        uploadToS3Result = await uploadToS3(getSalesforceFileResult, awsFolderKey, awsFileTitle, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey, awsSessionToken, accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, sfNamespace, sfCreateLog, s3File, awsKMSKey, awsFileMetadata);
       } else{
           // Prepare failure rason with error message of API
           const failureReason = 'Your request to create S3-Folder for the record failed. ERROR: ' + getRecordHomeFolderResult.message ;
@@ -188,7 +188,7 @@ const getSalesforceFile = async (accessToken, instanceUrl, sfFileId, sfContentDo
 };
 
 // This method is used to upload Salesforce file into Amazon S3 with the help of provided AWS data
-const uploadToS3 = async (buffer, folderPath, fileTitle, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey, accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, sfNamespace, sfCreateLog, s3File, awsKMSKey, awsFileMetadata) => {
+const uploadToS3 = async (buffer, folderPath, fileTitle, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey, awsSessionToken, accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, sfNamespace, sfCreateLog, s3File, awsKMSKey, awsFileMetadata) => {
   try {
 	
 	// Check S3-File
@@ -238,7 +238,8 @@ const uploadToS3 = async (buffer, folderPath, fileTitle, awsBucketName, awsBucke
       region: awsBucketRegion,
       credentials: {
           accessKeyId: awsAccessKey,
-          secretAccessKey: awsSecretKey
+          secretAccessKey: awsSecretKey,
+          sessionToken: awsSessionToken
       }
     });
 
@@ -477,11 +478,12 @@ app.get('/', async (req, res) => {
       const s3File = '{S3_FILE}';
       const awsKMSKey = '{AWS_KMS_KEY}';
       const awsFileMetadata = '{AWS_FILE_METADATA}';
+      const awsSessionToken = '{AWS_SESSION_TOKEN}';
 
       // We are sending the request immediately because we cannot wait untill the whole migration is completed. It will timeout the API request in Apex.
       res.send(`Heroku service to migrate Salesforce File has been started successfully.`);
       
-      const reponse = await migrateSalesforce (sfFileId, awsAccessKey, awsSecretKey, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFolderKey, awsFileTitle, sfFileSize, sfContentDocumentId, sfParentId, sfContentDocumentLinkId, sfNamespace, sfDeleteFile, sfCreateLog, s3File, awsKMSKey, awsFileMetadata);
+      const reponse = await migrateSalesforce (sfFileId, awsAccessKey, awsSecretKey, awsSessionToken, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFolderKey, awsFileTitle, sfFileSize, sfContentDocumentId, sfParentId, sfContentDocumentLinkId, sfNamespace, sfDeleteFile, sfCreateLog, s3File, awsKMSKey, awsFileMetadata);
     } catch (error) {
       console.error(error);
     }
