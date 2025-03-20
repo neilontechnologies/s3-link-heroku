@@ -3,7 +3,18 @@
     "description": "This will allow migrating Salesforce Files into Amazon S3.",
     "repository": "https://github.com/neilontechnologies/s3-link-heroku",
     "logo": "https://www.neilontechnologies.com/public/frontend/images/Neilon.PNG", 
-    "keywords": ["node", "express", "aws", "salesforce", "heroku"],
+    "keywords": [
+        "Salesforce",
+        "Heroku",
+        "API Integration",
+        "Authentication",
+        "Node.js",
+        "Express",
+        "Cloud Integration"
+        "Node", 
+        "Express", 
+        "Aws", 
+    ],
     "stack": "heroku-22",
     "env": {
       "API_KEY": {
