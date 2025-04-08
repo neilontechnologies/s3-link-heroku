@@ -8,11 +8,11 @@
         "Heroku",
         "API Integration",
         "Authentication",
-        "Node.js",
+        "Node JS",
         "Express",
         "Cloud Integration"
         "Express", 
-        "Aws", 
+        "Aws" 
     ],
     "stack": "heroku-22",
     "env": {
