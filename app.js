@@ -5,16 +5,21 @@ const app = express();
 
 app.use(express.urlencoded({extended:true}));
 app.use(express.json());
+app.use(express.text());
 app.use(cors());
 const bodyParser = require('body-parser');
 app.use(bodyParser.json())
+
+const crypto = require('crypto');
 
 const XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
 
 // Use to authenticate heroku access key
 app.use((req, res, next) => {
   const apiKey = process.env.API_KEY;
-  const { heroku_api_key } = req.body;
+  const decryptedPayload = decryptAES256(req.body, apiKey.substring(0, 32));
+  const salesforceAuthenticationInfo = JSON.parse(decryptedPayload);
+  const { heroku_api_key } = salesforceAuthenticationInfo;
 
   if(heroku_api_key === apiKey){
     next(); 
@@ -26,13 +31,16 @@ app.use((req, res, next) => {
 // This service is used to upload salesforce files and attachments into Amazon S3
 app.post('/uploadsalesforcefile', async (req, res) => {
   try{
+	const apiKey = process.env.API_KEY;
+    const decryptedPayload = decryptAES256(req.body, apiKey.substring(0, 32));
+	const salesforceAuthenticationInfo = JSON.parse(decryptedPayload);
     // Get all headers from apex
     const {
       aws_access_key, aws_secret_key, sf_client_id, sf_client_secret,
       sf_username, sf_password, aws_file_title, sf_parent_id,
       aws_folder_key, aws_bucket_name, aws_bucket_region,
       sf_content_document_id, sf_file_size, sf_file_id, sf_content_document_link_id, sf_namespace, sf_delete_file, sf_create_log, s3_file, aws_kms_key, aws_file_meta_data, aws_session_token, sf_instance_url, sf_token
-    } = req.body;
+    } = salesforceAuthenticationInfo;
 
     // We are sending the request immediately because we cannot wait untill the whole migration is completed. It will timeout the API request in Apex.
     res.send(`Heroku service to migrate Salesforce File has been started successfully.`);
@@ -460,6 +468,25 @@ const createFileMigrationLog = (accessToken, instanceUrl, sfFileId, sfContentDoc
     xhr.send(JSON.stringify(body));
   });
 };
+
+// This function will be used to decrypt the payload
+function decryptAES256(encryptedBase64, keyString) {
+  // Convert the key and encrypted text to buffers
+  const key = Buffer.from(keyString, 'utf8'); // 32 bytes for AES256
+  const encryptedData = Buffer.from(encryptedBase64, 'base64');
+
+  // Salesforce prepends IV (16 bytes) to the ciphertext
+  const iv = encryptedData.subarray(0, 16);
+  const ciphertext = encryptedData.subarray(16);
+
+  // Create decipher
+  const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
+  let decrypted = decipher.update(ciphertext);
+  decrypted = Buffer.concat([decrypted, decipher.final()]);
+
+  // Convert back to string
+  return decrypted.toString('utf8');
+}
 
 // This service is used to upload salesforce files and attachments into Amazon S3 from local host
 app.get('/', async (req, res) => {
