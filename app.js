@@ -37,9 +37,10 @@ app.use((req, res, next) => {
 // This service is used to upload salesforce files and attachments into Amazon S3
 app.post('/uploadsalesforcefile', async (req, res) => {
   try{
+	const contentType = req.headers['content-type'];
 	const apiKey = process.env.API_KEY;
 	let salesforceAuthenticationInfo;
-	if(){
+	if(contentType == 'text/plain'){
       const decryptedPayload = decryptAES256(req.body, apiKey.substring(0, 32));
 	  salesforceAuthenticationInfo = JSON.parse(decryptedPayload);
 	} else{
