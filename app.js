@@ -52,14 +52,14 @@ app.post('/uploadsalesforcefile', async (req, res) => {
       aws_access_key, aws_secret_key, sf_client_id, sf_client_secret,
       sf_username, sf_password, aws_file_title, sf_parent_id,
       aws_folder_key, aws_bucket_name, aws_bucket_region,
-      sf_content_document_id, sf_file_size, sf_file_id, sf_content_document_link_id, sf_namespace, sf_delete_file, sf_create_log, s3_file, aws_kms_key, aws_file_meta_data, aws_session_token, sf_instance_url, sf_token
+      sf_content_document_id, sf_file_size, sf_file_id, sf_content_document_link_id, sf_namespace, sf_delete_file, sf_create_log, s3_file, aws_kms_key, aws_file_meta_data, aws_session_token, sf_instance_url, sf_token, sf_bulk_job_id
     } = salesforceAuthenticationInfo;
 
     // We are sending the request immediately because we cannot wait untill the whole migration is completed. It will timeout the API request in Apex.
     res.send(`Heroku service to migrate Salesforce File has been started successfully.`);
 
     // Get salesforce response
-    const migrateSalesforceResult = migrateSalesforce(sf_file_id, aws_access_key, aws_secret_key, aws_session_token, sf_client_id, sf_client_secret, sf_username, sf_password, aws_bucket_name, aws_bucket_region, aws_folder_key, aws_file_title, sf_file_size, sf_content_document_id, sf_parent_id, sf_content_document_link_id, sf_namespace, sf_delete_file, sf_create_log, s3_file, aws_kms_key, aws_file_meta_data, sf_instance_url, sf_token);
+    const migrateSalesforceResult = migrateSalesforce(sf_file_id, aws_access_key, aws_secret_key, aws_session_token, sf_client_id, sf_client_secret, sf_username, sf_password, aws_bucket_name, aws_bucket_region, aws_folder_key, aws_file_title, sf_file_size, sf_content_document_id, sf_parent_id, sf_content_document_link_id, sf_namespace, sf_delete_file, sf_create_log, s3_file, aws_kms_key, aws_file_meta_data, sf_instance_url, sf_token, sf_bulk_job_id);
 
   } catch(error){
     console.log(error);
@@ -67,7 +67,7 @@ app.post('/uploadsalesforcefile', async (req, res) => {
 });
 
 // This methiod is used to handle all combine methods
-const migrateSalesforce = async (sfFileId, awsAccessKey, awsSecretKey, awsSessionToken, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFolderKey, awsFileTitle, sfFileSize, sfContentDocumentId, sfParentId, sfContentDocumentLinkId, sfNamespace, sfDeleteFile, sfCreateLog, s3File, awsKMSKey, awsFileMetadata, sfInstanceUrl, sfToken) =>{
+const migrateSalesforce = async (sfFileId, awsAccessKey, awsSecretKey, awsSessionToken, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFolderKey, awsFileTitle, sfFileSize, sfContentDocumentId, sfParentId, sfContentDocumentLinkId, sfNamespace, sfDeleteFile, sfCreateLog, s3File, awsKMSKey, awsFileMetadata, sfInstanceUrl, sfToken, sfBulkJobId) =>{
   let accessToken;
   let instanceUrl;
 
@@ -89,10 +89,17 @@ const migrateSalesforce = async (sfFileId, awsAccessKey, awsSecretKey, awsSessio
   }
 
   // Check required parameters
-  if(sfFileSize &&  sfFileId && (awsFolderKey || sfParentId) && awsFileTitle){
-    // Get salesforce file information 
-    const getSalesforceFileResult = await getSalesforceFile(accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, sfNamespace, sfCreateLog);
+  if(((sfFileSize &&  sfFileId) || sfBulkJobId) && (awsFolderKey || sfParentId) && awsFileTitle){
 
+	let getSalesforceFileResult;
+    if(sfBulkJobId != null){
+        // Get salesforce data information 
+        getSalesforceFileResult = await getSalesforceData(accessToken, instanceUrl, sfBulkJobId, sfNamespace, sfCreateLog);
+    } else {
+		// Get salesforce file information 
+		getSalesforceFileResult = await getSalesforceFile(accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, sfNamespace, sfCreateLog);
+	}
+	
     // Prepare aws file key, upload to s3 result
     var uploadToS3Result;
     var awsFileKey;
@@ -103,11 +110,11 @@ const migrateSalesforce = async (sfFileId, awsAccessKey, awsSecretKey, awsSessio
       awsFileKey = awsFolderKey + '/' + awsFileTitle;
 
       // If folder is created then upload it to Amazon S3
-      uploadToS3Result = await uploadToS3(getSalesforceFileResult, awsFolderKey, awsFileTitle, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey, awsSessionToken, accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, sfNamespace, sfCreateLog, s3File, awsKMSKey, awsFileMetadata);
+      uploadToS3Result = await uploadToS3(getSalesforceFileResult, awsFolderKey, awsFileTitle, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey, awsSessionToken, accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, sfNamespace, sfCreateLog, s3File, awsKMSKey, awsFileMetadata, sfBulkJobId);
     } else {
 
       // If folder is not created then create folder then upload it to Amazon S3
-      const { getRecordHomeFolderResult } = await getRecordHomeFolder(accessToken, instanceUrl, sfParentId, sfFileId, sfContentDocumentLinkId, sfNamespace, sfCreateLog);
+      const { getRecordHomeFolderResult } = await getRecordHomeFolder(accessToken, instanceUrl, sfParentId, sfFileId, sfContentDocumentLinkId, sfNamespace, sfCreateLog, sfBulkJobId);
  
       // Check reponse
       if(getRecordHomeFolderResult.sObjects != null && getRecordHomeFolderResult.sObjects.length > 0){
@@ -117,29 +124,40 @@ const migrateSalesforce = async (sfFileId, awsAccessKey, awsSecretKey, awsSessio
         // Check namespace is available or not
         awsFolderKey = getRecordHomeFolderResult.sObjects[0][sfNamespace + 'Amazon_File_Key__c'];
         awsFileKey = awsFolderKey + '/' + awsFileTitle;
-        uploadToS3Result = await uploadToS3(getSalesforceFileResult, awsFolderKey, awsFileTitle, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey, awsSessionToken, accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, sfNamespace, sfCreateLog, s3File, awsKMSKey, awsFileMetadata);
+        uploadToS3Result = await uploadToS3(getSalesforceFileResult, awsFolderKey, awsFileTitle, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey, awsSessionToken, accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, sfNamespace, sfCreateLog, s3File, awsKMSKey, awsFileMetadata, sfBulkJobId);
       } else{
           // Prepare failure rason with error message of API
           const failureReason = 'Your request to create S3-Folder for the record failed. ERROR: ' + getRecordHomeFolderResult.message ;
 
           if(sfCreateLog){
             // Create File Migration Logs
-            const createFileMigrationLogResult = await createFileMigrationLog(accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, failureReason, sfNamespace);
+            const createFileMigrationLogResult = await createLogs(accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, failureReason, sfNamespace, sfBulkJobId);
           }
       }
+    }
+	
+	// Check if file size available. If not, set it from blob
+    if(!sfFileSize && getSalesforceFileResult){
+      sfFileSize = getSalesforceFileResult.length;
     }
 
     // Create S3-File record in Salesforce org
     if(uploadToS3Result && uploadToS3Result.$metadata.httpStatusCode === 200){
-      const createS3FilesInSalesforceResult = await createS3FilesInSalesforce(accessToken, instanceUrl, awsBucketName, awsFileKey, sfFileSize, sfContentDocumentId, sfFileId, sfContentDocumentLinkId, sfNamespace, sfDeleteFile, sfCreateLog, s3File);
+      const createS3FilesInSalesforceResult = await createS3FilesInSalesforce(accessToken, instanceUrl, awsBucketName, awsFileKey, sfFileSize, sfContentDocumentId, sfFileId, sfContentDocumentLinkId, sfNamespace, sfDeleteFile, sfCreateLog, s3File, sfBulkJobId);
     }
   } else {
     if(sfCreateLog){
       // Prepare failure rason with error message of API
-      const failureReason = 'Salesforce File Id, Salesforce File Size, AWS Bucket Name, AWS Bucket Region or AWS File Path is missing.';
+      const failureReason = '';
 
+      if (sfBulkJobId && sfBulkJobId.trim() !== '') {
+        failureReason = 'Salesforce Bulk API Job Id, S3 Bucket Name, or S3 Folder Path is missing.';
+      } else{
+        failureReason = 'Salesforce File Id, Salesforce File Size, S3 Bucket Name, or S3 Folder Path is missing.';
+      }
+      
       // Create File Migration Logs
-      const createFileMigrationLogResult = await createFileMigrationLog(accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, failureReason, sfNamespace);
+      const createFileMigrationLogResult = await createLogs(accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, failureReason, sfNamespace, sfBulkJobId);
       throw new Error(failureReason);
     }
   }
@@ -210,15 +228,59 @@ const getSalesforceFile = async (accessToken, instanceUrl, sfFileId, sfContentDo
   } catch(error){
     // Create File Migration Logs
     if(sfCreateLog){
-      const createFileMigrationLogResult = await createFileMigrationLog(accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, error.message, sfNamespace);
+      const createFileMigrationLogResult = await createLogs(accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, error.message, sfNamespace, sfBulkJobId);
       console.error(error);
       throw error;
     }
   }
 };
 
+// This method is used to fetch Salesforce data with the help of bulk api job id
+const getSalesforceData = async (accessToken, instanceUrl, sfBulkJobId, sfNamespace, sfCreateLog) => {
+  try {
+	// Prepare url for Salesforce data export
+    const url = `${instanceUrl}/services/data/v60.0/jobs/query/${sfBulkJobId}/results`;
+	
+	// To authenticate salesforce
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    });
+	
+	// Returns the response status code
+    if (!response.ok) {
+      // Handle error response
+      throw new Error(`We are not able to fetch the Salesforce Data. ERROR: ${response.statusText}`);
+    } else {
+      // Handle successful response
+      const chunks = [];
+      for await (const chunk of response.body) {
+        chunks.push(chunk);
+      }
+
+      if(chunks.length > 0){
+	    const buffer = Buffer.concat(chunks);
+	    return buffer;
+	  } else{
+		throw new Error('Salesforce Data body is empty.');
+	  }
+    }
+
+  } catch (error) {
+	// Create File Migration Logs
+    if(sfCreateLog){
+        const createFileMigrationLogResult = await createLogs(accessToken, instanceUrl, sfBulkJobId, null, null, error.message, sfNamespace);
+	}
+    console.error(error);
+    throw error;
+  }
+};
+
+
 // This method is used to upload Salesforce file into Amazon S3 with the help of provided AWS data
-const uploadToS3 = async (buffer, folderPath, fileTitle, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey, awsSessionToken, accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, sfNamespace, sfCreateLog, s3File, awsKMSKey, awsFileMetadata) => {
+const uploadToS3 = async (buffer, folderPath, fileTitle, awsBucketName, awsBucketRegion, awsAccessKey, awsSecretKey, awsSessionToken, accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, sfNamespace, sfCreateLog, s3File, awsKMSKey, awsFileMetadata, sfBulkJobId) => {
   try {
 	
 	// Check S3-File
@@ -283,7 +345,7 @@ const uploadToS3 = async (buffer, folderPath, fileTitle, awsBucketName, awsBucke
     // Check sf create log is true or not
     if(sfCreateLog){
       // Create File Migration Logs
-      const createFileMigrationLogResult = await createFileMigrationLog(accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, failureReason, sfNamespace);
+      const createFileMigrationLogResult = await createLogs(accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, failureReason, sfNamespace, sfBulkJobId);
       console.error(failureReason);
       throw error.message; 
     }
@@ -291,7 +353,7 @@ const uploadToS3 = async (buffer, folderPath, fileTitle, awsBucketName, awsBucke
 };
 
 // This method used to create record home folder for parent id
-const getRecordHomeFolder = (accessToken, instanceUrl, sfParentId, sfFileId, sfContentDocumentLinkId, sfNamespace, sfCreateLog) => {
+const getRecordHomeFolder = (accessToken, instanceUrl, sfParentId, sfFileId, sfContentDocumentLinkId, sfNamespace, sfCreateLog, sfBulkJobId) => {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     let url;
@@ -321,7 +383,7 @@ const getRecordHomeFolder = (accessToken, instanceUrl, sfParentId, sfFileId, sfC
 
           if(sfCreateLog){
             // Create File Migration Logs
-            const createFileMigrationLogResult =  createFileMigrationLog(accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, failureReason, sfNamespace);
+            const createFileMigrationLogResult =  createLogs(accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, failureReason, sfNamespace, sfBulkJobId);
           }
           reject(new Error(failureReason));
         }
@@ -335,7 +397,7 @@ const getRecordHomeFolder = (accessToken, instanceUrl, sfParentId, sfFileId, sfC
       // Check sf create log is true or false
       if(sfCreateLog){
         // Create File Migration Logs
-        const createFileMigrationLogResult =  createFileMigrationLog(accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, failureReason, sfNamespace);
+        const createFileMigrationLogResult =  createLogs(accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, failureReason, sfNamespace, sfBulkJobId);
       }
 
       // Handle network error
@@ -346,13 +408,13 @@ const getRecordHomeFolder = (accessToken, instanceUrl, sfParentId, sfFileId, sfC
 };
 
 // This method used to create S3-Files record in salesforce
-const createS3FilesInSalesforce = async (accessToken, instanceUrl, awsBucketName, awsFileKey, sfFileSize, sfContentDocumentId, sfFileId, sfContentDocumentLinkId, sfNamespace, sfDeleteFile, sfCreateLog, s3File) => {
+const createS3FilesInSalesforce = async (accessToken, instanceUrl, awsBucketName, awsFileKey, sfFileSize, sfContentDocumentId, sfFileId, sfContentDocumentLinkId, sfNamespace, sfDeleteFile, sfCreateLog, s3File, sfBulkJobId) => {
   return new Promise((resolve, reject) => {
     let url;
     const xhr = new XMLHttpRequest();
 
     // Check namespace is available or not
-    if(sfNamespace != ''){
+    if(sfNamespace !== ''){
       url = `${instanceUrl}/services/apexrest/NEILON/S3Link/v1/creates3files/`;
     } else {
       url = `${instanceUrl}/services/apexrest/S3Link/v1/creates3files/`;
@@ -394,7 +456,7 @@ const createS3FilesInSalesforce = async (accessToken, instanceUrl, awsBucketName
             // Check sf create log is true or false
             if(sfCreateLog){
               // Create File Migration Logs
-              const createFileMigrationLogResult =  createFileMigrationLog(accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, failureReason, sfNamespace);
+              const createFileMigrationLogResult =  createLogs(accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, failureReason, sfNamespace, sfBulkJobId);
             }
           } else{
             resolve(response);
@@ -406,7 +468,7 @@ const createS3FilesInSalesforce = async (accessToken, instanceUrl, awsBucketName
           // Check sf create log is true or false
           if(sfCreateLog){
             // Create File Migration Logs
-            const createFileMigrationLogResult =  createFileMigrationLog(accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, failureReason, sfNamespace);
+            const createFileMigrationLogResult =  createLogs(accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, failureReason, sfNamespace, sfBulkJobId);
           }
 
           reject(new Error(failureReason));
@@ -422,7 +484,7 @@ const createS3FilesInSalesforce = async (accessToken, instanceUrl, awsBucketName
       // Check sf create log is true or false
       if(sfCreateLog){
         // Create File Migration Logs
-        const createFileMigrationLogResult = createFileMigrationLog(accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, failureReason, sfNamespace);
+        const createFileMigrationLogResult = createLogs(accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, failureReason, sfNamespace, sfBulkJobId);
       }
       reject(new Error(failureReason));
     };
@@ -433,14 +495,28 @@ const createS3FilesInSalesforce = async (accessToken, instanceUrl, awsBucketName
 };
 
 // This method used to create Salesforce File Migration Log record in salesforce
-const createFileMigrationLog = (accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, failureReason, sfNamespace) => {
+const createLogs = (accessToken, instanceUrl, sfFileId, sfContentDocumentLinkId, failureReason, sfNamespace, sfBulkJobId) => {
   return new Promise((resolve, reject) => {
     let url;
     const xhr = new XMLHttpRequest();
+	let body = {};
+	
+    // Check if this is data export job
+    const isBulkJob = sfBulkJobId && sfBulkJobId.trim() !== '';
+	
+    // Decide endpoint
     if(sfNamespace != ''){
-      url = `${instanceUrl}/services/apexrest/NEILON/S3Link/v1/createmigrationlog/`;
+	  if(isBulkJob){
+		url = `${instanceUrl}/services/apexrest/NEILON/S3Link/v1/setdataexportjobstatus/`;
+	  } else{
+		url = `${instanceUrl}/services/apexrest/NEILON/S3Link/v1/createmigrationlog/`;
+	  }
     } else {
-      url = `${instanceUrl}/services/apexrest/S3Link/v1/createmigrationlog/`;
+	  if(isBulkJob){
+		url = `${instanceUrl}/services/apexrest/S3Link/v1/setdataexportjobstatus/`;
+	  } else{
+		url = `${instanceUrl}/services/apexrest/S3Link/v1/createmigrationlog/`;
+	  }
     }
     
     // Open the request
@@ -448,17 +524,25 @@ const createFileMigrationLog = (accessToken, instanceUrl, sfFileId, sfContentDoc
     xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
     xhr.setRequestHeader('Content-Type', 'application/json');
 
-    // Create body
-    const body = {}
+    // Prepare body
+    if(isBulkJob){
+      // Bulk Job case
+      body = {
+        JobId: sfBulkJobId,
+        Status: 'Failed',
+        Message: failureReason
+      };
+    } else{
 
-    // Check file type is attachment or content document link
-    if (sfFileId.startsWith('00P')) {
+      // Check file type is attachment or content document link
+      if (sfFileId.startsWith('00P')) {
         body.SalesforceFileId = sfFileId;
-    } else {
+      } else {
         body.SalesforceFileId = sfContentDocumentLinkId;
-    }
-    body.FailureReason = failureReason;
-
+      }
+      body.FailureReason = failureReason;
+	}
+	  
     // Handle the response
     xhr.onload = function() {
       if (xhr.readyState === 4) {  
@@ -529,12 +613,13 @@ app.get('/', async (req, res) => {
       const awsFileMetadata = '{AWS_FILE_METADATA}';
       const awsSessionToken = '{AWS_SESSION_TOKEN}';
 	  const sfInstanceUrl = '{SALESFORCE_INSTANCE_URL}';
-	  const sfToken = '{SALESFORCE_TOKEN}'
+	  const sfToken = '{SALESFORCE_TOKEN}';
+	  const sfBulkJobId = '{SALESFORCE_BULK_JOB_ID}';
 
       // We are sending the request immediately because we cannot wait untill the whole migration is completed. It will timeout the API request in Apex.
       res.send(`Heroku service to migrate Salesforce File has been started successfully.`);
       
-      const reponse = await migrateSalesforce (sfFileId, awsAccessKey, awsSecretKey, awsSessionToken, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFolderKey, awsFileTitle, sfFileSize, sfContentDocumentId, sfParentId, sfContentDocumentLinkId, sfNamespace, sfDeleteFile, sfCreateLog, s3File, awsKMSKey, awsFileMetadata, sfInstanceUrl, sfToken);
+      const reponse = await migrateSalesforce (sfFileId, awsAccessKey, awsSecretKey, awsSessionToken, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFolderKey, awsFileTitle, sfFileSize, sfContentDocumentId, sfParentId, sfContentDocumentLinkId, sfNamespace, sfDeleteFile, sfCreateLog, s3File, awsKMSKey, awsFileMetadata, sfInstanceUrl, sfToken, sfBulkJobId);
     } catch (error) {
       console.error(error);
     }
