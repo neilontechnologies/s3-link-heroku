@@ -50,7 +50,7 @@ app.post('/uploadsalesforcefile', async (req, res) => {
     // Get all headers from apex
     const {
       aws_access_key, aws_secret_key, sf_client_id, sf_client_secret,
-      sf_username, sf_password, aws_file_title, sf_parent_id,
+      aws_file_title, sf_parent_id,
       aws_folder_key, aws_bucket_name, aws_bucket_region,
       sf_content_document_id, sf_file_size, sf_file_id, sf_content_document_link_id, sf_namespace, sf_delete_file, sf_create_log, s3_file, aws_kms_key, aws_file_meta_data, aws_session_token, sf_instance_url, sf_token, sf_bulk_job_id
     } = salesforceAuthenticationInfo;
@@ -59,7 +59,7 @@ app.post('/uploadsalesforcefile', async (req, res) => {
     res.send(`Heroku service to migrate Salesforce File has been started successfully.`);
 
     // Get salesforce response
-    const migrateSalesforceResult = migrateSalesforce(sf_file_id, aws_access_key, aws_secret_key, aws_session_token, sf_client_id, sf_client_secret, sf_username, sf_password, aws_bucket_name, aws_bucket_region, aws_folder_key, aws_file_title, sf_file_size, sf_content_document_id, sf_parent_id, sf_content_document_link_id, sf_namespace, sf_delete_file, sf_create_log, s3_file, aws_kms_key, aws_file_meta_data, sf_instance_url, sf_token, sf_bulk_job_id);
+    const migrateSalesforceResult = migrateSalesforce(sf_file_id, aws_access_key, aws_secret_key, aws_session_token, sf_client_id, sf_client_secret, aws_bucket_name, aws_bucket_region, aws_folder_key, aws_file_title, sf_file_size, sf_content_document_id, sf_parent_id, sf_content_document_link_id, sf_namespace, sf_delete_file, sf_create_log, s3_file, aws_kms_key, aws_file_meta_data, sf_instance_url, sf_token, sf_bulk_job_id);
 
   } catch(error){
     console.log(error);
@@ -67,13 +67,13 @@ app.post('/uploadsalesforcefile', async (req, res) => {
 });
 
 // This methiod is used to handle all combine methods
-const migrateSalesforce = async (sfFileId, awsAccessKey, awsSecretKey, awsSessionToken, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFolderKey, awsFileTitle, sfFileSize, sfContentDocumentId, sfParentId, sfContentDocumentLinkId, sfNamespace, sfDeleteFile, sfCreateLog, s3File, awsKMSKey, awsFileMetadata, sfInstanceUrl, sfToken, sfBulkJobId) =>{
+const migrateSalesforce = async (sfFileId, awsAccessKey, awsSecretKey, awsSessionToken, sfClientId, sfClientSecret, awsBucketName, awsBucketRegion, awsFolderKey, awsFileTitle, sfFileSize, sfContentDocumentId, sfParentId, sfContentDocumentLinkId, sfNamespace, sfDeleteFile, sfCreateLog, s3File, awsKMSKey, awsFileMetadata, sfInstanceUrl, sfToken, sfBulkJobId) =>{
   let accessToken;
   let instanceUrl;
 
   if(sfToken == null){
 	// Get access token of salesforce
-	const salesforceTokenResponse = await getToken(sfClientId, sfClientSecret, sfUsername, sfPassword, sfInstanceUrl);
+	const salesforceTokenResponse = await getToken(sfClientId, sfClientSecret, sfInstanceUrl);
 	
     // Check if access token and instance URL are available or not
     if(!salesforceTokenResponse.accessToken || !salesforceTokenResponse.instanceUrl){
@@ -164,9 +164,9 @@ const migrateSalesforce = async (sfFileId, awsAccessKey, awsSecretKey, awsSessio
 }
 
 // This method is used to get access token of Salesforce org and instance url of the org
-const getToken = (sfClientId, sfClientSecret, sfUsername, sfPassword, sfInstanceUrl) => {
+const getToken = (sfClientId, sfClientSecret, sfInstanceUrl) => {
     return new Promise((resolve, reject) => {
-      const postData = `grant_type=password&client_id=${sfClientId}&client_secret=${sfClientSecret}&username=${sfUsername}&password=${sfPassword}`;
+      const postData = `grant_type=client_credentials&client_id=${sfClientId}&client_secret=${sfClientSecret}`;
       const xhr = new XMLHttpRequest();
   
       xhr.open('POST', sfInstanceUrl + '/services/oauth2/token', true);
@@ -595,8 +595,6 @@ app.get('/', async (req, res) => {
       const awsSecretKey = '{AWS_SECRET_KEY}';
       const sfClientId = '{SALESFORCE_CLIENT_ID}';
       const sfClientSecret = '{SALESFORCE_CLIENT_SECRET_KEY}';
-      const sfUsername = '{SALESFORCE_USERNAME}';
-      const sfPassword = '{SALESFORCE_PASSWORD}';
       const awsBucketName = '{AWS_BUCKET_NAME}';
       const awsBucketRegion = '{AWS_BUCKET_REGION}';
       const sfFileSize = '{SALESFORCE_FILE_SIZE}';
@@ -619,7 +617,7 @@ app.get('/', async (req, res) => {
       // We are sending the request immediately because we cannot wait untill the whole migration is completed. It will timeout the API request in Apex.
       res.send(`Heroku service to migrate Salesforce File has been started successfully.`);
       
-      const reponse = await migrateSalesforce (sfFileId, awsAccessKey, awsSecretKey, awsSessionToken, sfClientId, sfClientSecret, sfUsername, sfPassword, awsBucketName, awsBucketRegion, awsFolderKey, awsFileTitle, sfFileSize, sfContentDocumentId, sfParentId, sfContentDocumentLinkId, sfNamespace, sfDeleteFile, sfCreateLog, s3File, awsKMSKey, awsFileMetadata, sfInstanceUrl, sfToken, sfBulkJobId);
+      const reponse = await migrateSalesforce (sfFileId, awsAccessKey, awsSecretKey, awsSessionToken, sfClientId, sfClientSecret, awsBucketName, awsBucketRegion, awsFolderKey, awsFileTitle, sfFileSize, sfContentDocumentId, sfParentId, sfContentDocumentLinkId, sfNamespace, sfDeleteFile, sfCreateLog, s3File, awsKMSKey, awsFileMetadata, sfInstanceUrl, sfToken, sfBulkJobId);
     } catch (error) {
       console.error(error);
     }
