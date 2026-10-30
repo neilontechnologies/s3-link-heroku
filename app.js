@@ -181,13 +181,13 @@ const getToken = (sfClientId, sfClientSecret, sfInstanceUrl) => {
               instanceUrl: response.instance_url
             });
           } else {
-            reject(new Error('We are not able to get the Salesforce Authentication Token. This happens if the Salesforce Client Id, Client Secret, User Name, Password or Security Token is invalid. ERROR: ' + response.error_description));
+            reject(new Error('We are not able to get the Salesforce Authentication Token. This happens if the Salesforce Client Id or Client Secret is invalid. ERROR: ' + response.error_description));
           }
         }
       };
   
       xhr.onerror = function(e){
-        reject(new Error('We are not able to get the Salesforce Authentication Token. This happens if the Salesforce Client Id, Client Secret, User Name, Password or Security Token is invalid. ERROR: ' + e.message));
+        reject(new Error('We are not able to get the Salesforce Authentication Token. This happens if the Salesforce Client Id or Client Secret is invalid. ERROR: ' + e.message));
       };
   
       xhr.send(postData);
